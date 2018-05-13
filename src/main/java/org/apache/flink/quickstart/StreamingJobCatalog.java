@@ -77,7 +77,6 @@ public class StreamingJobCatalog {
 		initializeTableSink(tblEnv);
 
 		Table srcTbl = tblEnv.scan("kafka_db","test");
-		srcTbl.minus()
 		tblEnv.sqlUpdate("INSERT INTO testOutput SELECT name FROM kafka_db.test where age > 30");
 		tblEnv.sqlUpdate("INSERT INTO testOutput2 SELECT name FROM kafka_db.test where age <= 30");
 
