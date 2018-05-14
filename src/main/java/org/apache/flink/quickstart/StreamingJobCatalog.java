@@ -22,6 +22,7 @@ import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.connectors.kafka.Kafka010JsonTableSink;
+import org.apache.flink.streaming.connectors.kafka.Kafka011AvroTableSource;
 import org.apache.flink.streaming.connectors.kafka.KafkaJsonTableSink;
 import org.apache.flink.table.api.*;
 import org.apache.flink.table.catalog.ExternalCatalogTable;
@@ -76,20 +77,18 @@ public class StreamingJobCatalog {
 		// Approach 1:  use sql "insert into" to write to sink
 		initializeTableSink(tblEnv);
 
-		Table srcTbl = tblEnv.scan("kafka_db","test");
+		//Table srcTbl = tblEnv.scan("kafka_db","test");
 		tblEnv.sqlUpdate("INSERT INTO testOutput SELECT name FROM kafka_db.test where age > 30");
 		tblEnv.sqlUpdate("INSERT INTO testOutput2 SELECT name FROM kafka_db.test where age <= 30");
 
 		// Approach 2: programmatically writes to sink
-//		// kafka output
-//		// kafka related configs
-//		Properties kafkaProps = new Properties();
-//		kafkaProps.put("bootstrap.servers", "localhost:9092");
-//		kafkaProps.put("group.id", "jerryConsumer");
-//		KafkaJsonTableSink kafkaSink = new Kafka010JsonTableSink("output", kafkaProps);
-//		// actual sql query
-//		Table result = tblEnv.sqlQuery("SELECT name from kafka_db.test");
-//		result.writeToSink(kafkaSink);
+		// kafka related configs
+		Properties kafkaProps = new Properties();
+		kafkaProps.put("bootstrap.servers", "localhost:9092");
+		KafkaJsonTableSink kafkaSink = new Kafka010JsonTableSink("output", kafkaProps);
+		// actual sql query
+		Table result = tblEnv.sqlQuery("SELECT name from kafka_db.test");
+		result.writeToSink(kafkaSink);
 
 		env.execute("Flink Streaming Java API Skeleton");
 	}
