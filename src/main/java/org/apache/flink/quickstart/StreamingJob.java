@@ -50,11 +50,12 @@ public class StreamingJob {
 		kafkaProps.put("group.id", "jerryConsumer");
 		// kafka input
 		Kafka011JsonTableSource.Builder builder = Kafka011JsonTableSource.builder();
-		Kafka011JsonTableSource kafkaTable = builder.forTopic("test")
+		Kafka011JsonTableSource kafkaTable = builder.forTopic("testJerry")
 				.withSchema(TableSchema.builder()
 						.field("id",Types.LONG())
 						.field("name", Types.STRING())
 						.field("age", Types.INT())
+						.field("address", Types.MAP(Types.STRING(),Types.STRING()))
 						.build())
 				.fromGroupOffsets()
 				.withKafkaProperties(kafkaProps)
@@ -62,7 +63,7 @@ public class StreamingJob {
 		tblEnv.registerTableSource("test", kafkaTable);
 
 		// actual sql query
-		Table result = tblEnv.sqlQuery("SELECT name from test");
+		Table result = tblEnv.sqlQuery("SELECT name from test where address['nation'] ='china'");
 
 		// kafka output
 		KafkaJsonTableSink kafkaSink = new Kafka010JsonTableSink("output", kafkaProps);
