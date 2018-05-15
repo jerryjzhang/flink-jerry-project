@@ -24,11 +24,11 @@ import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.java.typeutils.MapTypeInfo;
 import org.apache.flink.api.java.typeutils.RowTypeInfo;
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.flink.types.Row;
 import org.apache.flink.util.Preconditions;
 
-import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -45,6 +45,8 @@ import java.util.Map;
  */
 @PublicEvolving
 public class CsvRowDeserializationSchema implements DeserializationSchema<Row> {
+    private static final long serialVersionUID = -228294330688809190L;
+
 	/** Type information describing the result type. */
 	private final TypeInformation<Row> typeInfo;
 	private String fieldDelimiter = "\t";
@@ -89,21 +91,21 @@ public class CsvRowDeserializationSchema implements DeserializationSchema<Row> {
 	private Object convert(String field, TypeInformation<?> info) {
 		if (info == Types.VOID || field == null) {
 			return null;
-		} else if (info == Types.BOOLEAN) {
+		} else if (info == Types.BOOLEAN || info.getTypeClass() == Boolean.class) {
 			return Boolean.valueOf(field);
-		} else if (info == Types.STRING) {
+		} else if (info == Types.STRING || info.getTypeClass() == String.class) {
 			return field;
-		} else if (info == Types.BIG_DEC) {
-			return Double.valueOf(field);
-		} else if (info == Types.INT) {
+		} else if (info == Types.BIG_DEC || info.getTypeClass() == BigDecimal.class) {
+			return BigDecimal.valueOf(Double.valueOf(field));
+		} else if (info == Types.INT || info.getTypeClass() == Integer.class) {
 			return Integer.valueOf(field);
-		}else if (info == Types.LONG){
+		}else if (info == Types.LONG || info.getTypeClass() == Long.class){
 			return Long.valueOf(field);
-		} else if (info == Types.BIG_INT) {
-			return Long.valueOf(field);
-		} else if (info == Types.SQL_DATE) {
+		} else if (info == Types.BIG_INT || info.getTypeClass() == BigInteger.class) {
+			return BigInteger.valueOf(Long.valueOf(field));
+		} else if (info == Types.SQL_DATE || info.getTypeClass() == Date.class) {
 			return Date.valueOf(field);
-		} else if (info == Types.SQL_TIME) {
+		} else if (info == Types.SQL_TIME || info.getTypeClass() == Time.class) {
 			// according to RFC 3339 every full-time must have a timezone;
 			// until we have full timezone support, we only support UTC;
 			// users can parse their time as string as a workaround
@@ -114,7 +116,7 @@ public class CsvRowDeserializationSchema implements DeserializationSchema<Row> {
 						"Format: HH:mm:ss'Z'");
 			}
 			return Time.valueOf(time.substring(0, time.length() - 1));
-		} else if (info == Types.SQL_TIMESTAMP) {
+		} else if (info == Types.SQL_TIMESTAMP || info.getTypeClass() == Timestamp.class) {
 			// according to RFC 3339 every date-time must have a timezone;
 			// until we have full timezone support, we only support UTC;
 			// users can parse their time as string as a workaround

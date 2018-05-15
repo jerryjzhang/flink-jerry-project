@@ -21,9 +21,9 @@ package org.apache.flink.quickstart;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.connectors.kafka.Kafka010JsonTableSink;
 import org.apache.flink.streaming.connectors.kafka.Kafka011CsvTableSource;
-import org.apache.flink.streaming.connectors.kafka.Kafka011JsonTableSource;
 import org.apache.flink.streaming.connectors.kafka.KafkaJsonTableSink;
 import org.apache.flink.table.api.*;
+import org.apache.flink.api.common.typeinfo.Types;
 
 import java.util.Properties;
 
@@ -54,9 +54,10 @@ public class StreamingJobCsv {
 		Kafka011CsvTableSource.Builder builder = Kafka011CsvTableSource.builder();
 		Kafka011CsvTableSource kafkaTable = builder.forTopic("testJerry")
 				.withSchema(TableSchema.builder()
-						.field("id",Types.INT())
-						.field("name", Types.STRING())
-						.field("age", Types.INT())
+						.field("id",Types.INT)
+						.field("name", Types.STRING)
+						.field("age", Types.INT)
+						.field("eventMap", Types.MAP(Types.STRING, Types.STRING))
 						.build())
 				.fromGroupOffsets()
 				.withKafkaProperties(kafkaProps)
@@ -64,7 +65,7 @@ public class StreamingJobCsv {
 		tblEnv.registerTableSource("test", kafkaTable);
 
 		// actual sql query
-		Table result = tblEnv.sqlQuery("SELECT name from test");
+		Table result = tblEnv.sqlQuery("SELECT name from test where eventMap['eventTag'] = '10005'");
 
 		// kafka output
 		KafkaJsonTableSink kafkaSink = new Kafka010JsonTableSink("output", kafkaProps);
