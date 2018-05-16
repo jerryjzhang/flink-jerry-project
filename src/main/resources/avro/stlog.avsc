@@ -1,0 +1,12 @@
+[
+{"namespace": "org.apache.flink.formats.avro.generated",
+ "type": "record",
+ "name": "SdkLog",
+ "fields": [
+     {"name": "id", "type": "int"},
+     {"name": "name", "type": "string"},
+     {"name": "age", "type": "int"},
+     {"name":"event", "type": {"type": "map", "values": "string"}}
+  ]
+}
+]

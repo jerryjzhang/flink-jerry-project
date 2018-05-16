@@ -19,12 +19,16 @@
 package org.apache.flink.quickstart;
 
 import org.apache.flink.formats.avro.generated.SdkLog;
+import org.apache.flink.jerry.Kafka011AvroTableSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.connectors.kafka.Kafka010JsonTableSink;
 import org.apache.flink.streaming.connectors.kafka.Kafka011AvroTableSink;
-import org.apache.flink.streaming.connectors.kafka.Kafka011CsvTableSource;
+import org.apache.flink.streaming.connectors.kafka.KafkaJsonTableSink;
 import org.apache.flink.table.api.*;
 import org.apache.flink.api.common.typeinfo.Types;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -39,7 +43,7 @@ import java.util.Properties;
  * <p>If you change the name of the main class (with the public static void main(String[] args))
  * method, change the respective entry in the POM.xml file (simply search for 'mainClass').
  */
-public class StreamingJobCsv {
+public class StreamingJobAvro {
 
 	public static void main(String[] args) throws Exception {
 		// set up the streaming execution environment
@@ -51,14 +55,21 @@ public class StreamingJobCsv {
 		kafkaProps.put("bootstrap.servers", "localhost:9092");
 		kafkaProps.put("group.id", "jerryConsumer");
 		// kafka input
-		Kafka011CsvTableSource.Builder builder = Kafka011CsvTableSource.builder();
-		Kafka011CsvTableSource kafkaTable = builder.forTopic("testJerry")
+        final Map<String, String> tableAvroMapping = new HashMap<>();
+        tableAvroMapping.put("id", "id");
+        tableAvroMapping.put("name", "name");
+        tableAvroMapping.put("age", "age");
+        tableAvroMapping.put("event", "event");
+		Kafka011AvroTableSource.Builder builder = Kafka011AvroTableSource.builder();
+		Kafka011AvroTableSource kafkaTable = builder.forTopic("outputAvro2")
+				.forAvroRecordClass(SdkLog.class)
 				.withSchema(TableSchema.builder()
 						.field("id",Types.INT)
 						.field("name", Types.STRING)
 						.field("age", Types.INT)
 						.field("event", Types.MAP(Types.STRING, Types.STRING))
 						.build())
+                .withTableToAvroMapping(tableAvroMapping)
 				.fromGroupOffsets()
 				.withKafkaProperties(kafkaProps)
 				.build();
@@ -66,12 +77,13 @@ public class StreamingJobCsv {
 
 		// actual sql query
 		Table result = tblEnv.sqlQuery("SELECT * from test where event['eventTag'] = '10004'");
-
 		// kafka output
-		//KafkaJsonTableSink kafkaSink = new Kafka010JsonTableSink("output", kafkaProps);
-		//result.writeToSink(kafkaSink);
-		Kafka011AvroTableSink kafkaSink = new Kafka011AvroTableSink("outputAvro2", kafkaProps, SdkLog.class);
+        //Kafka011AvroTableSink kafkaSink = new Kafka011AvroTableSink("outputAvroFuck", kafkaProps, SdkLog.class);
+        //result.writeToSink(kafkaSink);
+
+		KafkaJsonTableSink kafkaSink = new Kafka010JsonTableSink("outputFuck", kafkaProps);
 		result.writeToSink(kafkaSink);
+
 		// execute program
 		env.execute("Flink Streaming Java API Skeleton");
 	}

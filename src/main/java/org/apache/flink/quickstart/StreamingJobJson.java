@@ -37,7 +37,7 @@ import java.util.Properties;
  * <p>If you change the name of the main class (with the public static void main(String[] args))
  * method, change the respective entry in the POM.xml file (simply search for 'mainClass').
  */
-public class StreamingJob {
+public class StreamingJobJson {
 
 	public static void main(String[] args) throws Exception {
 		// set up the streaming execution environment
