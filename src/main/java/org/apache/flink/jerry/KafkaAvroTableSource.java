@@ -22,7 +22,6 @@ import org.apache.avro.specific.SpecificRecord;
 import org.apache.avro.specific.SpecificRecordBase;
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.common.serialization.DeserializationSchema;
-import org.apache.flink.api.java.typeutils.RowTypeInfo;
 import org.apache.flink.formats.avro.typeutils.AvroRecordClassConverter;
 import org.apache.flink.streaming.connectors.kafka.KafkaTableSource;
 import org.apache.flink.table.api.TableSchema;
@@ -46,8 +45,6 @@ public abstract class KafkaAvroTableSource extends KafkaTableSource implements D
 
 	private Map<String, String> fieldMapping;
 
-	private final TableSchema tableSchema;
-
 	/**
 	 * Creates a generic Kafka Avro {@link StreamTableSource} using a given {@link SpecificRecord}.
 	 *
@@ -69,7 +66,6 @@ public abstract class KafkaAvroTableSource extends KafkaTableSource implements D
 			AvroRecordClassConverter.convert(avroRecordClass));
 
 		this.avroRecordClass = avroRecordClass;
-		this.tableSchema = schema;
 	}
 
 	@Override
@@ -84,11 +80,7 @@ public abstract class KafkaAvroTableSource extends KafkaTableSource implements D
 
 	@Override
 	protected AvroRowDeserializationSchema getDeserializationSchema() {
-		return new AvroRowDeserializationSchema(avroRecordClass, tableSchemaToReturnType(tableSchema));
-	}
-
-	private static RowTypeInfo tableSchemaToReturnType(TableSchema tableSchema) {
-		return new RowTypeInfo(tableSchema.getTypes(), tableSchema.getColumnNames());
+		return new AvroRowDeserializationSchema(avroRecordClass, AvroRecordClassConverter.convert(avroRecordClass));
 	}
 
 	@Override

@@ -79,10 +79,21 @@ public class AvroRowDeserializationSchema extends AbstractDeserializationSchema<
 	private SpecificRecord record;
 
 	private final TypeInformation<Row> typeInfo;
+
 	/**
 	 * Creates a Avro deserialization schema for the given record.
 	 *
 	 * @param recordClazz Avro record class used to deserialize Avro's record to Flink's row
+	 */
+	public AvroRowDeserializationSchema(Class<? extends SpecificRecord> recordClazz){
+		this(recordClazz, null);
+	}
+
+	/**
+	 * Creates a Avro deserialization schema for the given record.
+	 *
+	 * @param recordClazz Avro record class used to deserialize Avro's record to Flink's row
+	 * @param typeInfo Type information describing the result type.
 	 */
 	public AvroRowDeserializationSchema(Class<? extends SpecificRecord> recordClazz, TypeInformation<Row> typeInfo) {
 		Preconditions.checkNotNull(recordClazz, "Avro record class must not be null.");
@@ -113,8 +124,6 @@ public class AvroRowDeserializationSchema extends AbstractDeserializationSchema<
 	private void writeObject(ObjectOutputStream oos) throws IOException {
 		oos.writeObject(recordClazz);
 	}
-
-
 
 	@SuppressWarnings("unchecked")
 	private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException {

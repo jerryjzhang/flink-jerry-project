@@ -18,14 +18,15 @@
 
 package org.apache.flink.quickstart;
 
+import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.formats.avro.generated.SdkLog;
 import org.apache.flink.jerry.Kafka011AvroTableSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.connectors.kafka.Kafka010JsonTableSink;
-import org.apache.flink.streaming.connectors.kafka.Kafka011AvroTableSink;
 import org.apache.flink.streaming.connectors.kafka.KafkaJsonTableSink;
 import org.apache.flink.table.api.*;
 import org.apache.flink.api.common.typeinfo.Types;
+
 
 import java.util.HashMap;
 import java.util.Map;
@@ -59,29 +60,31 @@ public class StreamingJobAvro {
         tableAvroMapping.put("id", "id");
         tableAvroMapping.put("name", "name");
         tableAvroMapping.put("age", "age");
-        tableAvroMapping.put("event", "event");
+        //tableAvroMapping.put("event", "event");
 		Kafka011AvroTableSource.Builder builder = Kafka011AvroTableSource.builder();
 		Kafka011AvroTableSource kafkaTable = builder.forTopic("outputAvro2")
 				.forAvroRecordClass(SdkLog.class)
 				.withSchema(TableSchema.builder()
-						.field("id",Types.INT)
+						.field("id", Types.INT)
 						.field("name", Types.STRING)
 						.field("age", Types.INT)
-						.field("event", Types.MAP(Types.STRING, Types.STRING))
+								//.field("event", Types.GENERIC(Map.class))
+								//.field("event", TypeInformation.of(Map.class))
 						.build())
-                .withTableToAvroMapping(tableAvroMapping)
+				.withTableToAvroMapping(tableAvroMapping)
 				.fromGroupOffsets()
 				.withKafkaProperties(kafkaProps)
 				.build();
 		tblEnv.registerTableSource("test", kafkaTable);
 
 		// actual sql query
-		Table result = tblEnv.sqlQuery("SELECT * from test where event['eventTag'] = '10004'");
+		Table result = tblEnv.sqlQuery("SELECT * from test");
+		//Table result = tblEnv.sqlQuery("SELECT * from test where event['eventTag'] = '10004'");
 		// kafka output
         //Kafka011AvroTableSink kafkaSink = new Kafka011AvroTableSink("outputAvroFuck", kafkaProps, SdkLog.class);
         //result.writeToSink(kafkaSink);
 
-		KafkaJsonTableSink kafkaSink = new Kafka010JsonTableSink("outputFuck", kafkaProps);
+		KafkaJsonTableSink kafkaSink = new Kafka010JsonTableSink("output", kafkaProps);
 		result.writeToSink(kafkaSink);
 
 		// execute program
