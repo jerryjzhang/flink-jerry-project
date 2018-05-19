@@ -18,14 +18,19 @@
 
 package org.apache.flink.quickstart;
 
-import org.apache.flink.api.common.typeinfo.TypeInformation;
+import info.batey.kafka.unit.KafkaUnit;
+import org.apache.flink.formats.avro.AvroRowSerializationSchema;
 import org.apache.flink.formats.avro.generated.SdkLog;
 import org.apache.flink.jerry.Kafka011AvroTableSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.connectors.kafka.Kafka010JsonTableSink;
-import org.apache.flink.streaming.connectors.kafka.KafkaJsonTableSink;
 import org.apache.flink.table.api.*;
 import org.apache.flink.api.common.typeinfo.Types;
+import org.apache.flink.types.Row;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.BytesSerializer;
+import org.apache.kafka.common.serialization.StringSerializer;
+import org.apache.kafka.common.utils.Bytes;
 
 
 import java.util.HashMap;
@@ -45,49 +50,82 @@ import java.util.Properties;
  * method, change the respective entry in the POM.xml file (simply search for 'mainClass').
  */
 public class StreamingJobAvro {
+	private static final String INPUT_TOPIC = "testJerry";
+	private static final String KAFKA_CONN_STR = "localhost:5001";
+	private static final String Zk_CONN_STR = "localhost:5000";
+	private static KafkaUnit kafkaServer = new KafkaUnit(Zk_CONN_STR, KAFKA_CONN_STR);
 
 	public static void main(String[] args) throws Exception {
+		// setup local kafka environment
+		setupKafkaEnvironment();
+
 		// set up the streaming execution environment
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		final StreamTableEnvironment tblEnv = TableEnvironment.getTableEnvironment(env);
 
 		// kafka related configs
 		Properties kafkaProps = new Properties();
-		kafkaProps.put("bootstrap.servers", "localhost:9092");
+		kafkaProps.put("bootstrap.servers", KAFKA_CONN_STR);
+		kafkaProps.put("zookeeper.connect", Zk_CONN_STR);
 		kafkaProps.put("group.id", "jerryConsumer");
 		// kafka input
         final Map<String, String> tableAvroMapping = new HashMap<>();
         tableAvroMapping.put("id", "id");
         tableAvroMapping.put("name", "name");
         tableAvroMapping.put("age", "age");
-        //tableAvroMapping.put("event", "event");
+        tableAvroMapping.put("event", "event");
 		Kafka011AvroTableSource.Builder builder = Kafka011AvroTableSource.builder();
-		Kafka011AvroTableSource kafkaTable = builder.forTopic("outputAvro2")
+		Kafka011AvroTableSource kafkaTable = builder.forTopic(INPUT_TOPIC)
 				.forAvroRecordClass(SdkLog.class)
 				.withSchema(TableSchema.builder()
 						.field("id", Types.INT)
 						.field("name", Types.STRING)
 						.field("age", Types.INT)
-								//.field("event", Types.GENERIC(Map.class))
-								//.field("event", TypeInformation.of(Map.class))
+						.field("event", Types.MAP(Types.STRING, Types.STRING))
 						.build())
 				.withTableToAvroMapping(tableAvroMapping)
-				.fromGroupOffsets()
+				.fromEarliest()
 				.withKafkaProperties(kafkaProps)
 				.build();
 		tblEnv.registerTableSource("test", kafkaTable);
 
 		// actual sql query
-		Table result = tblEnv.sqlQuery("SELECT * from test");
-		//Table result = tblEnv.sqlQuery("SELECT * from test where event['eventTag'] = '10004'");
+		Table result = tblEnv.sqlQuery("SELECT * from test where event['eventTag'] = '10004'");
 		// kafka output
         //Kafka011AvroTableSink kafkaSink = new Kafka011AvroTableSink("outputAvroFuck", kafkaProps, SdkLog.class);
         //result.writeToSink(kafkaSink);
-
-		KafkaJsonTableSink kafkaSink = new Kafka010JsonTableSink("output", kafkaProps);
-		result.writeToSink(kafkaSink);
+		//KafkaJsonTableSink kafkaSink = new Kafka010JsonTableSink(OUTPUT_TOPIC, kafkaProps);
+		//result.writeToSink(kafkaSink);
+		result.writeToSink(new PrintStreamTableSink(kafkaTable.getReturnType()));
 
 		// execute program
 		env.execute("Flink Streaming Java API Skeleton");
+	}
+
+	private static void setupKafkaEnvironment()throws Exception{
+		kafkaServer.startup();
+		kafkaServer.createTopic(INPUT_TOPIC);
+		Map<String, String> event = new HashMap<>();
+		event.put("eventTag", "10004");
+		event.put("eventLog", "info");
+
+		Properties props = new Properties();
+		props.put("bootstrap.servers", KAFKA_CONN_STR);
+		props.put("key.serializer", StringSerializer.class.getName());
+		props.put("value.serializer", BytesSerializer.class.getName());
+		KafkaProducer producer = new KafkaProducer(props);
+
+		Row row = new Row(4);
+		row.setField(0, 1);
+		row.setField(1, "jerryjzhang");
+		row.setField(2, 32);
+		row.setField(3, event);
+
+		AvroRowSerializationSchema serializationSchema = new AvroRowSerializationSchema(SdkLog.class);
+		byte[] content = serializationSchema.serialize(row);
+
+		ProducerRecord<String,Bytes> message = new ProducerRecord<>(INPUT_TOPIC, null,
+				Bytes.wrap(content));
+		producer.send(message);
 	}
 }
