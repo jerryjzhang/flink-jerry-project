@@ -19,6 +19,10 @@
 package org.apache.flink.quickstart;
 
 import info.batey.kafka.unit.KafkaUnit;
+import org.apache.avro.io.BinaryEncoder;
+import org.apache.avro.io.DatumWriter;
+import org.apache.avro.io.EncoderFactory;
+import org.apache.avro.specific.SpecificDatumWriter;
 import org.apache.flink.formats.avro.AvroRowSerializationSchema;
 import org.apache.flink.formats.avro.generated.SdkLog;
 import org.apache.flink.jerry.Kafka011AvroTableSource;
@@ -33,6 +37,7 @@ import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.common.utils.Bytes;
 
 
+import java.io.ByteArrayOutputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -105,9 +110,6 @@ public class StreamingJobAvro {
 	private static void setupKafkaEnvironment()throws Exception{
 		kafkaServer.startup();
 		kafkaServer.createTopic(INPUT_TOPIC);
-		Map<String, String> event = new HashMap<>();
-		event.put("eventTag", "10004");
-		event.put("eventLog", "info");
 
 		Properties props = new Properties();
 		props.put("bootstrap.servers", KAFKA_CONN_STR);
@@ -115,17 +117,28 @@ public class StreamingJobAvro {
 		props.put("value.serializer", BytesSerializer.class.getName());
 		KafkaProducer producer = new KafkaProducer(props);
 
-		Row row = new Row(4);
-		row.setField(0, 1);
-		row.setField(1, "jerryjzhang");
-		row.setField(2, 32);
-		row.setField(3, event);
-
-		AvroRowSerializationSchema serializationSchema = new AvroRowSerializationSchema(SdkLog.class);
-		byte[] content = serializationSchema.serialize(row);
-
 		ProducerRecord<String,Bytes> message = new ProducerRecord<>(INPUT_TOPIC, null,
-				Bytes.wrap(content));
+				Bytes.wrap(generateTestMessage()));
 		producer.send(message);
+	}
+
+	private static byte[] generateTestMessage()throws Exception{
+		Map<CharSequence, CharSequence> event = new HashMap<>();
+		event.put("eventTag", "10004");
+		event.put("eventLog", "info");
+		SdkLog record = SdkLog.newBuilder()
+				.setId(1)
+				.setName("jerryjzhang")
+				.setAge(32)
+				.setEvent(event)
+				.build();
+
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		BinaryEncoder encoder = EncoderFactory.get().binaryEncoder(out, null);
+		DatumWriter<SdkLog> writer = new SpecificDatumWriter<>(SdkLog.getClassSchema());
+		writer.write(record, encoder);
+		encoder.flush();
+		out.close();
+		return out.toByteArray();
 	}
 }
