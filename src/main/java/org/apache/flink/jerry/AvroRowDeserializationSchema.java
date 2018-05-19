@@ -19,7 +19,6 @@ package org.apache.flink.jerry;
 
 import org.apache.flink.api.common.serialization.AbstractDeserializationSchema;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
-import org.apache.flink.table.api.TableSchema;
 import org.apache.flink.types.Row;
 import org.apache.flink.util.Preconditions;
 
@@ -37,7 +36,10 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Deserialization schema from Avro bytes over {@link SpecificRecord} to {@link Row}.
@@ -168,6 +170,14 @@ public class AvroRowDeserializationSchema extends AbstractDeserializationSchema<
 			return row;
 		} else if (recordObj instanceof Utf8) {
 			return recordObj.toString();
+		}   //added by jerryjzhang: converting avro.UTF8 to string
+		 else if (recordObj instanceof Map){
+			final Set<Map.Entry> recordMapEnt = ((Map) recordObj).entrySet();
+			Map<String, String> recordObjStr = new HashMap<>();
+			for(Map.Entry r : recordMapEnt){
+				recordObjStr.put(r.getKey().toString(), r.getValue().toString());
+			}
+			return recordObjStr;
 		} else {
 			return recordObj;
 		}
