@@ -91,6 +91,14 @@ public class AvroRecordClassConverter {
 		TypeInformation ctype = Types.STRING;
 		if(type == Schema.Type.STRING) {
 			ctype = Types.STRING;
+		}else if(type == Schema.Type.INT){
+			ctype = Types.INT;
+		}else if(type == Schema.Type.LONG){
+			ctype = Types.LONG;
+		}else if(type == Schema.Type.DOUBLE){
+			ctype = Types.FLOAT;
+		}else if(type == Schema.Type.BOOLEAN){
+			ctype = Types.BOOLEAN;
 		}
 		return ctype;
 	}
