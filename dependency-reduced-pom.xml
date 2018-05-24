@@ -72,7 +72,7 @@
         <configuration>
           <archive>
             <manifest>
-              <mainClass>org.apache.flink.quickstart.StreamingJobJson</mainClass>
+              <mainClass>org.apache.flink.quickstart.StreamingJobOSUninstall</mainClass>
             </manifest>
           </archive>
         </configuration>
@@ -136,7 +136,7 @@
               </filters>
               <transformers>
                 <transformer>
-                  <mainClass>org.apache.flink.quickstart.StreamingJobJson</mainClass>
+                  <mainClass>org.apache.flink.quickstart.StreamingJobOSUninstall</mainClass>
                 </transformer>
               </transformers>
             </configuration>

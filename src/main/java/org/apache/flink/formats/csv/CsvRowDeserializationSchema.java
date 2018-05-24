@@ -140,7 +140,11 @@ public class CsvRowDeserializationSchema implements DeserializationSchema<Row> {
 		String [] entries = line.split(mapEntryDelimiter);
 		for(String entry : entries){
 			String [] e = entry.split(mapKeyDelimiter);
-			mapObj.put(e[0], e[1]);
+			String value = "";
+			if(e.length > 1){
+			    value = e[1];
+            }
+			mapObj.put(e[0], value);
 		}
 
 		return mapObj;
@@ -151,10 +155,10 @@ public class CsvRowDeserializationSchema implements DeserializationSchema<Row> {
 		final TypeInformation<?>[] types = info.getFieldTypes();
 
 		String [] csv = line.split(fieldDelimiter);
-		if(csv.length > names.length){
-			throw new IllegalStateException(
-					"Actual #fields is more than that in schema!");
-		}
+//		if(csv.length > names.length){
+//			throw new IllegalStateException(
+//					"Actual #fields is more than that in schema!");
+//		}
 
 		final Row row = new Row(names.length);
 		for (int i = 0; i < names.length; i++) {

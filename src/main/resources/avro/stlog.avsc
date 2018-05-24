@@ -1,12 +1,40 @@
 [
-{"namespace": "org.apache.flink.formats.avro.generated",
- "type": "record",
- "name": "SdkLog",
- "fields": [
-     {"name": "id", "type": "int"},
-     {"name": "name", "type": "string"},
-     {"name": "age", "type": "int"},
-     {"name":"event", "type": {"type": "map", "values": "string"}}
-  ]
-}
+    {
+         "namespace": "org.apache.flink.formats.avro.generated",
+         "type": "record",
+         "name": "SdkLog",
+         "fields": [
+             {"name": "id", "type": "int"},
+             {"name": "name", "type": "string"},
+             {"name": "age", "type": "int"},
+             {"name":"event", "type": {"type": "map", "values": "string"}}
+          ]
+    },
+    {
+         "namespace": "org.apache.flink.formats.avro.generated",
+         "type": "record",
+         "name": "OSUninstall",
+         "fields": [
+             {"name": "imei", "type": "string"},
+             {"name": "model", "type": "string"},
+             {"name": "os_version", "type": "string"},
+             {"name": "rom_version", "type": "string"},
+             {"name": "android_version", "type": "string"},
+             {"name": "channel", "type": "string"},
+             {"name": "access", "type": "string"},
+             {"name": "carrier", "type": "string"},
+             {"name": "sdk_version", "type": "string"},
+             {"name": "ip_address", "type": "string"},
+             {"name": "app_package", "type": "string"},
+             {"name": "app_name", "type": "string"},
+             {"name": "app_version", "type": "string"},
+             {"name": "ssoid", "type": "string"},
+             {"name": "log_tag", "type": "string"},
+             {"name":"log_map", "type": {"type": "map", "values": "string"}},
+             {"name": "system_id", "type": "string"},
+             {"name": "event_id", "type": "string"},
+             {"name": "server_time", "type": "string"},
+             {"name": "client_time", "type": "string"}
+          ]
+    }
 ]
