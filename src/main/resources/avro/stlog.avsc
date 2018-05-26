@@ -7,7 +7,9 @@
              {"name": "id", "type": "int"},
              {"name": "name", "type": "string"},
              {"name": "age", "type": "int"},
-             {"name":"event", "type": {"type": "map", "values": "string"}}
+             {"name":"event", "type": {"type": "map", "values": "string"}},
+             {"name":"intMap", "type": {"type": "map", "values": "int"}},
+             {"name":"strArray", "type": {"type": "array", "items": "string"}}
           ]
     },
     {
