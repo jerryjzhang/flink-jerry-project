@@ -24,8 +24,10 @@ import org.apache.avro.io.DatumWriter;
 import org.apache.avro.io.EncoderFactory;
 import org.apache.avro.specific.SpecificDatumWriter;
 import org.apache.flink.formats.avro.generated.SdkLog;
+import org.apache.flink.formats.avro.generated.SdkLogOutput;
 import org.apache.flink.jerry.Kafka011AvroTableSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.connectors.kafka.Kafka011AvroTableSink;
 import org.apache.flink.table.api.*;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -52,6 +54,7 @@ import java.util.*;
  */
 public class StreamingJobAvro {
 	private static final String INPUT_TOPIC = "testJerry";
+	private static final String OUTPUT_TOPIC = "outputJerry";
 	private static final String KAFKA_CONN_STR = "localhost:5001";
 	private static final String Zk_CONN_STR = "localhost:5000";
 	private static KafkaUnit kafkaServer = new KafkaUnit(Zk_CONN_STR, KAFKA_CONN_STR);
@@ -95,10 +98,11 @@ public class StreamingJobAvro {
 		tblEnv.registerTableSource("test", kafkaTable);
 
 		// actual sql query
-		//Table result = tblEnv.sqlQuery("SELECT * from test where event['eventTag'] = '10004'");
-		Table result = tblEnv.sqlQuery("SELECT * from test");
+		Table result = tblEnv.sqlQuery("SELECT id,name,age from test where event['eventTag'] = '10004'");
 		// kafka output
-		result.writeToSink(new PrintStreamTableSink(kafkaTable.getReturnType()));
+		Kafka011AvroTableSink kafkaSink = new Kafka011AvroTableSink(OUTPUT_TOPIC, kafkaProps, SdkLogOutput.class);
+		result.writeToSink(kafkaSink);
+		result.writeToSink(new PrintStreamTableSink());
 
 		// execute program
 		env.execute("Flink Streaming Java API Skeleton");
@@ -107,6 +111,7 @@ public class StreamingJobAvro {
 	private static void setupKafkaEnvironment()throws Exception{
 		kafkaServer.startup();
 		kafkaServer.createTopic(INPUT_TOPIC);
+		kafkaServer.createTopic(OUTPUT_TOPIC);
 
 		Properties props = new Properties();
 		props.put("bootstrap.servers", KAFKA_CONN_STR);

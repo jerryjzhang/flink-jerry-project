@@ -28,7 +28,7 @@ import org.apache.flink.types.Row;
 import java.util.Properties;
 
 /**
- * Kafka 0.10 {@link KafkaTableSink} that serializes data in JSON format.
+ * Kafka 0.10 {@link KafkaTableSink} that serializes data in AVRO format.
  */
 @PublicEvolving
 public class Kafka011AvroTableSink extends KafkaAvroTableSink {
