@@ -23,13 +23,13 @@ import org.apache.avro.io.BinaryEncoder;
 import org.apache.avro.io.DatumWriter;
 import org.apache.avro.io.EncoderFactory;
 import org.apache.avro.specific.SpecificDatumWriter;
-import org.apache.flink.formats.avro.AvroRowSerializationSchema;
 import org.apache.flink.formats.avro.generated.SdkLog;
+import org.apache.flink.formats.avro.generated.SdkLogOutput;
 import org.apache.flink.jerry.Kafka011AvroTableSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.connectors.kafka.Kafka011AvroTableSink;
 import org.apache.flink.table.api.*;
 import org.apache.flink.api.common.typeinfo.Types;
-import org.apache.flink.types.Row;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.BytesSerializer;
@@ -38,9 +38,7 @@ import org.apache.kafka.common.utils.Bytes;
 
 
 import java.io.ByteArrayOutputStream;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * Skeleton for a Flink Streaming Job.
@@ -56,6 +54,7 @@ import java.util.Properties;
  */
 public class StreamingJobAvro {
 	private static final String INPUT_TOPIC = "testJerry";
+	private static final String OUTPUT_TOPIC = "outputJerry";
 	private static final String KAFKA_CONN_STR = "localhost:5001";
 	private static final String Zk_CONN_STR = "localhost:5000";
 	private static KafkaUnit kafkaServer = new KafkaUnit(Zk_CONN_STR, KAFKA_CONN_STR);
@@ -79,6 +78,8 @@ public class StreamingJobAvro {
         tableAvroMapping.put("name", "name");
         tableAvroMapping.put("age", "age");
         tableAvroMapping.put("event", "event");
+        tableAvroMapping.put("intMap", "intMap");
+        tableAvroMapping.put("strArray", "strArray");
 		Kafka011AvroTableSource.Builder builder = Kafka011AvroTableSource.builder();
 		Kafka011AvroTableSource kafkaTable = builder.forTopic(INPUT_TOPIC)
 				.forAvroRecordClass(SdkLog.class)
@@ -87,6 +88,8 @@ public class StreamingJobAvro {
 						.field("name", Types.STRING)
 						.field("age", Types.INT)
 						.field("event", Types.MAP(Types.STRING, Types.STRING))
+						.field("intMap", Types.MAP(Types.STRING, Types.INT))
+						.field("strArray", Types.LIST(Types.STRING))
 						.build())
 				.withTableToAvroMapping(tableAvroMapping)
 				.fromEarliest()
@@ -95,13 +98,11 @@ public class StreamingJobAvro {
 		tblEnv.registerTableSource("test", kafkaTable);
 
 		// actual sql query
-		Table result = tblEnv.sqlQuery("SELECT * from test where event['eventTag'] = '10004'");
+		Table result = tblEnv.sqlQuery("SELECT id,name,age from test where event['eventTag'] = '10004'");
 		// kafka output
-        //Kafka011AvroTableSink kafkaSink = new Kafka011AvroTableSink("outputAvroFuck", kafkaProps, SdkLog.class);
-        //result.writeToSink(kafkaSink);
-		//KafkaJsonTableSink kafkaSink = new Kafka010JsonTableSink(OUTPUT_TOPIC, kafkaProps);
-		//result.writeToSink(kafkaSink);
-		result.writeToSink(new PrintStreamTableSink(kafkaTable.getReturnType()));
+		Kafka011AvroTableSink kafkaSink = new Kafka011AvroTableSink(OUTPUT_TOPIC, kafkaProps, SdkLogOutput.class);
+		result.writeToSink(kafkaSink);
+		result.writeToSink(new PrintStreamTableSink());
 
 		// execute program
 		env.execute("Flink Streaming Java API Skeleton");
@@ -110,6 +111,7 @@ public class StreamingJobAvro {
 	private static void setupKafkaEnvironment()throws Exception{
 		kafkaServer.startup();
 		kafkaServer.createTopic(INPUT_TOPIC);
+		kafkaServer.createTopic(OUTPUT_TOPIC);
 
 		Properties props = new Properties();
 		props.put("bootstrap.servers", KAFKA_CONN_STR);
@@ -126,11 +128,17 @@ public class StreamingJobAvro {
 		Map<CharSequence, CharSequence> event = new HashMap<>();
 		event.put("eventTag", "10004");
 		event.put("eventLog", "info");
+		Map<CharSequence, Integer> intMap = new HashMap<>();
+		intMap.put("id", 1986);
+		List<CharSequence> strs = new ArrayList<>();
+		strs.add("jerryjzhang");
 		SdkLog record = SdkLog.newBuilder()
 				.setId(1)
 				.setName("jerryjzhang")
 				.setAge(32)
 				.setEvent(event)
+				.setIntMap(intMap)
+				.setStrArray(strs)
 				.build();
 
 		ByteArrayOutputStream out = new ByteArrayOutputStream();

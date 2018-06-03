@@ -81,22 +81,28 @@ public class AvroRecordClassConverter {
 			 else if(genericTypeInfo.getTypeClass() == Map.class){
 				// avro map keys are always strings
 				return Types.MAP(Types.STRING,
-						convertAvroType(schema.getValueType().getType()));
+						convertPrimitiveType(schema.getValueType().getType()));
+			}else if(genericTypeInfo.getTypeClass() == List.class){
+			    if (schema.getType() == Schema.Type.ARRAY) {
+                    return Types.LIST(convertPrimitiveType(schema.getElementType().getType()));
+                }
 			}
 		}
 		return extracted;
 	}
 
-	private static TypeInformation convertAvroType(Schema.Type type){
-		TypeInformation ctype = Types.STRING;
+	private static TypeInformation convertPrimitiveType(Schema.Type type){
+		TypeInformation ctype = Types.VOID;
 		if(type == Schema.Type.STRING) {
 			ctype = Types.STRING;
 		}else if(type == Schema.Type.INT){
 			ctype = Types.INT;
 		}else if(type == Schema.Type.LONG){
 			ctype = Types.LONG;
-		}else if(type == Schema.Type.DOUBLE){
+		}else if(type == Schema.Type.FLOAT){
 			ctype = Types.FLOAT;
+		}else if(type == Schema.Type.DOUBLE){
+			ctype = Types.DOUBLE;
 		}else if(type == Schema.Type.BOOLEAN){
 			ctype = Types.BOOLEAN;
 		}

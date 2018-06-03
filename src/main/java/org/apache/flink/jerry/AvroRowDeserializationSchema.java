@@ -17,6 +17,7 @@
 
 package org.apache.flink.jerry;
 
+import org.apache.avro.generic.GenericData;
 import org.apache.avro.specific.SpecificRecordBase;
 import org.apache.flink.api.common.serialization.AbstractDeserializationSchema;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
@@ -37,10 +38,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Deserialization schema from Avro bytes over {@link SpecificRecord} to {@link Row}.
@@ -162,14 +160,26 @@ public class AvroRowDeserializationSchema extends AbstractDeserializationSchema<
 			return row;
 		} else if (recordObj instanceof Utf8) {
 			return recordObj.toString();
-		}   //added by jerryjzhang: converting avro.UTF8 to string
-		 else if (recordObj instanceof Map){
-			final Set<Map.Entry> recordMapEnt = ((Map) recordObj).entrySet();
-			Map<String, String> recordObjStr = new HashMap<>();
-			for(Map.Entry r : recordMapEnt){
-				recordObjStr.put(r.getKey().toString(), r.getValue().toString());
+		} //added by jerryjzhang: converting avro.UTF8 to string
+          // otherwise exception like: "org.apache.avro.util.Utf8 cannot be cast to java.lang.String"
+		  else if (recordObj instanceof Map) {
+			Map<String, Object> retObj = new HashMap<>();
+			for(Map.Entry r : (Set<Map.Entry>)((Map)recordObj).entrySet()) {
+			    // avro map key is always string
+                retObj.put(r.getKey().toString(), convertToRow(schema.getValueType(), r.getValue()));
 			}
-			return recordObjStr;
+
+			return retObj;
+		} //added by jerryjzhang: converting avro.UTF8 to string
+          // otherwise exception like: "org.apache.avro.util.Utf8 cannot be cast to java.lang.String"
+		  else if(recordObj instanceof GenericData.Array) {
+			GenericData.Array arrayObj = (GenericData.Array)recordObj;
+			List<Object> retObj = new ArrayList<>();
+			for(Object obj : arrayObj) {
+				retObj.add(convertToRow(arrayObj.getSchema(), obj));
+			}
+
+			return retObj;
 		} else {
 			return recordObj;
 		}

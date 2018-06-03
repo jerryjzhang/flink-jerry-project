@@ -1,6 +1,7 @@
 package org.apache.flink.quickstart;
 
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.java.typeutils.RowTypeInfo;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.table.sinks.AppendStreamTableSink;
 import org.apache.flink.table.sinks.TableSink;
@@ -12,10 +13,8 @@ import org.apache.flink.types.Row;
 public class PrintStreamTableSink implements AppendStreamTableSink<Row> {
     private String [] fieldNames;
     private TypeInformation[] fieldTypes;
-    private TypeInformation<Row> returnTypes;
 
-    public PrintStreamTableSink(TypeInformation<Row> returnTypes){
-        this.returnTypes = returnTypes;
+    public PrintStreamTableSink(){
     }
 
     @Override
@@ -25,7 +24,7 @@ public class PrintStreamTableSink implements AppendStreamTableSink<Row> {
 
     @Override
     public TypeInformation<Row> getOutputType() {
-        return returnTypes;
+        return new RowTypeInfo(this.fieldTypes, this.fieldNames);
     }
 
     @Override
