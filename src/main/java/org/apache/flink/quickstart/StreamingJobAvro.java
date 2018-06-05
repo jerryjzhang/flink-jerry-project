@@ -25,6 +25,8 @@ import org.apache.avro.io.EncoderFactory;
 import org.apache.avro.specific.SpecificDatumWriter;
 import org.apache.flink.formats.avro.generated.SdkLog;
 import org.apache.flink.formats.avro.generated.SdkLogOutput;
+import org.apache.flink.formats.avro.generated.SdkLogRecord;
+import org.apache.flink.jerry.AvroRecordClassConverter;
 import org.apache.flink.jerry.Kafka011AvroTableSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.connectors.kafka.Kafka011AvroTableSink;
@@ -80,6 +82,7 @@ public class StreamingJobAvro {
         tableAvroMapping.put("event", "event");
         tableAvroMapping.put("intMap", "intMap");
         tableAvroMapping.put("strArray", "strArray");
+		tableAvroMapping.put("recMap", "recMap");
 		Kafka011AvroTableSource.Builder builder = Kafka011AvroTableSource.builder();
 		Kafka011AvroTableSource kafkaTable = builder.forTopic(INPUT_TOPIC)
 				.forAvroRecordClass(SdkLog.class)
@@ -90,6 +93,7 @@ public class StreamingJobAvro {
 						.field("event", Types.MAP(Types.STRING, Types.STRING))
 						.field("intMap", Types.MAP(Types.STRING, Types.INT))
 						.field("strArray", Types.LIST(Types.STRING))
+						.field("recMap", Types.MAP(Types.STRING, AvroRecordClassConverter.convert(SdkLogRecord.class)))
 						.build())
 				.withTableToAvroMapping(tableAvroMapping)
 				.fromEarliest()
@@ -98,7 +102,7 @@ public class StreamingJobAvro {
 		tblEnv.registerTableSource("test", kafkaTable);
 
 		// actual sql query
-		Table result = tblEnv.sqlQuery("SELECT id,name,age from test where event['eventTag'] = '10004'");
+		Table result = tblEnv.sqlQuery("SELECT id,name,age from test where event['eventTag'] = '10004' and recMap['jerry'].id = 1986");
 		// kafka output
 		Kafka011AvroTableSink kafkaSink = new Kafka011AvroTableSink(OUTPUT_TOPIC, kafkaProps, SdkLogOutput.class);
 		result.writeToSink(kafkaSink);
@@ -132,6 +136,10 @@ public class StreamingJobAvro {
 		intMap.put("id", 1986);
 		List<CharSequence> strs = new ArrayList<>();
 		strs.add("jerryjzhang");
+		Map<CharSequence, SdkLogRecord> recMap = new HashMap<>();
+		SdkLogRecord r = new SdkLogRecord();
+		r.setId(1986);
+		recMap.put("jerry", r);
 		SdkLog record = SdkLog.newBuilder()
 				.setId(1)
 				.setName("jerryjzhang")
@@ -139,6 +147,7 @@ public class StreamingJobAvro {
 				.setEvent(event)
 				.setIntMap(intMap)
 				.setStrArray(strs)
+				.setRecMap(recMap)
 				.build();
 
 		ByteArrayOutputStream out = new ByteArrayOutputStream();

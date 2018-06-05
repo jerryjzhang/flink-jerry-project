@@ -28,6 +28,7 @@ import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.java.typeutils.GenericTypeInfo;
 import org.apache.flink.api.java.typeutils.RowTypeInfo;
 import org.apache.flink.types.Row;
+import org.apache.flink.util.FlinkRuntimeException;
 
 import java.util.List;
 import java.util.Map;
@@ -70,43 +71,55 @@ public class AvroRecordClassConverter {
 				names[i] = field.name();
 			}
 			return new RowTypeInfo(types, names);
+		} // added by jerryjzhang: convert map or else following exception will be thrown:
+		  // org.apache.flink.table.api.ValidationException: Type Map<String, String> of table
+		  //      field 'event' does not match with type GenericType<java.util.Map> of the field
+		  //      'event' of the TableSource return type
+		  else if (schema.getType() == Schema.Type.MAP) {
+			TypeInformation valueType = Types.VOID;
+			if(schema.getValueType().getType() == Schema.Type.RECORD) {
+				valueType = createAvroTypeInfo(schema.getValueType().getFullName());
+			}
+			return Types.MAP(Types.STRING, convertType(valueType, schema.getValueType()));
+		} else if (schema.getType() == Schema.Type.ARRAY) {
+			TypeInformation elementType = Types.VOID;
+			if(schema.getElementType().getType() == Schema.Type.RECORD) {
+				elementType = createAvroTypeInfo(schema.getElementType().getFullName());
+			}
+			return Types.LIST(convertType(elementType, schema.getElementType()));
+		} else if (schema.getType() == Schema.Type.STRING) {
+			return Types.STRING;
+		} else if (schema.getType() == Schema.Type.INT) {
+			return Types.INT;
+		} else if (schema.getType() == Schema.Type.LONG) {
+			return Types.LONG;
+		} else if (schema.getType() == Schema.Type.FLOAT) {
+			return Types.FLOAT;
+		} else if (schema.getType() == Schema.Type.DOUBLE) {
+			return Types.DOUBLE;
+		} else if (schema.getType() == Schema.Type.BOOLEAN) {
+			return Types.BOOLEAN;
 		} else if (extracted instanceof GenericTypeInfo<?>) {
 			final GenericTypeInfo<?> genericTypeInfo = (GenericTypeInfo<?>) extracted;
 			if (genericTypeInfo.getTypeClass() == Utf8.class) {
 				return BasicTypeInfo.STRING_TYPE_INFO;
-			}// added by jerryjzhang: convert map or else following exception will be thrown:
-			 // org.apache.flink.table.api.ValidationException: Type Map<String, String> of table
-			 //      field 'event' does not match with type GenericType<java.util.Map> of the field
-			 //      'event' of the TableSource return type
-			 else if(genericTypeInfo.getTypeClass() == Map.class){
-				// avro map keys are always strings
-				return Types.MAP(Types.STRING,
-						convertPrimitiveType(schema.getValueType().getType()));
-			}else if(genericTypeInfo.getTypeClass() == List.class){
-			    if (schema.getType() == Schema.Type.ARRAY) {
-                    return Types.LIST(convertPrimitiveType(schema.getElementType().getType()));
-                }
 			}
 		}
 		return extracted;
 	}
 
-	private static TypeInformation convertPrimitiveType(Schema.Type type){
-		TypeInformation ctype = Types.VOID;
-		if(type == Schema.Type.STRING) {
-			ctype = Types.STRING;
-		}else if(type == Schema.Type.INT){
-			ctype = Types.INT;
-		}else if(type == Schema.Type.LONG){
-			ctype = Types.LONG;
-		}else if(type == Schema.Type.FLOAT){
-			ctype = Types.FLOAT;
-		}else if(type == Schema.Type.DOUBLE){
-			ctype = Types.DOUBLE;
-		}else if(type == Schema.Type.BOOLEAN){
-			ctype = Types.BOOLEAN;
+	/**
+	 * Creates an AvroTypeInfo from the AvroClass which is derived using Java reflection.
+	 */
+	@SuppressWarnings("unchecked")
+	private static org.apache.flink.formats.avro.typeutils.AvroTypeInfo createAvroTypeInfo(String avroClassName) {
+		Class avroClass;
+		try {
+			avroClass = Class.forName(avroClassName);
+		} catch (ClassNotFoundException e) {
+			throw new FlinkRuntimeException(e);
 		}
-		return ctype;
-	}
 
+		return new org.apache.flink.formats.avro.typeutils.AvroTypeInfo<>(avroClass);
+	}
 }

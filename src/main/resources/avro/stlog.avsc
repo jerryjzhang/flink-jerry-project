@@ -5,11 +5,23 @@
          "name": "SdkLog",
          "fields": [
              {"name": "id", "type": "int"},
-             {"name": "name", "type": "string"},
-             {"name": "age", "type": "int"},
+             {"name": "name", "type": ["null", "string"]},
+             {"name": "age", "type": ["null", "int"]},
              {"name":"event", "type": {"type": "map", "values": "string"}},
              {"name":"intMap", "type": {"type": "map", "values": "int"}},
-             {"name":"strArray", "type": {"type": "array", "items": "string"}}
+             {"name":"strArray", "type": {"type": "array", "items": "string"}},
+             {"name":"recMap", "type":
+                {
+                   "type": "map", "values":
+                    {
+                        "type": "record",
+                        "name": "SdkLogRecord",
+                        "fields": [
+                            {"name": "id", "type": "int"}
+                        ]
+                    }
+                }
+             }
           ]
     },
     {
@@ -27,26 +39,26 @@
          "type": "record",
          "name": "OSUninstall",
          "fields": [
-             {"name": "imei", "type": "string"},
-             {"name": "model", "type": "string"},
-             {"name": "os_version", "type": "string"},
-             {"name": "rom_version", "type": "string"},
-             {"name": "android_version", "type": "string"},
-             {"name": "channel", "type": "string"},
-             {"name": "access", "type": "string"},
-             {"name": "carrier", "type": "string"},
-             {"name": "sdk_version", "type": "string"},
-             {"name": "ip_address", "type": "string"},
-             {"name": "app_package", "type": "string"},
-             {"name": "app_name", "type": "string"},
-             {"name": "app_version", "type": "string"},
-             {"name": "ssoid", "type": "string"},
-             {"name": "log_tag", "type": "string"},
-             {"name":"log_map", "type": {"type": "map", "values": "string"}},
-             {"name": "system_id", "type": "string"},
-             {"name": "event_id", "type": "string"},
-             {"name": "server_time", "type": "string"},
-             {"name": "client_time", "type": "string"}
-          ]
+             {"name": "imei", "type": ["null", "string"]},
+             {"name": "model", "type": ["null", "string"]},
+             {"name": "os_version", "type": ["null", "string"]},
+             {"name": "rom_version", "type": ["null", "string"]},
+             {"name": "android_version", "type": ["null", "string"]},
+             {"name": "channel", "type": ["null", "string"]},
+             {"name": "access", "type": ["null", "string"]},
+             {"name": "carrier", "type": ["null", "string"]},
+             {"name": "sdk_version", "type": ["null", "string"]},
+             {"name": "ip_address", "type": ["null", "string"]},
+             {"name": "app_package", "type": ["null", "string"]},
+             {"name": "app_name", "type": ["null", "string"]},
+             {"name": "app_version", "type": ["null", "string"]},
+             {"name": "ssoid", "type": ["null", "string"]},
+             {"name": "log_tag", "type": ["null", "string"]},
+             {"name":"log_map", "type": ["null", {"type": "map", "values": "string"}]},
+             {"name": "system_id", "type": ["null", "string"]},
+             {"name": "event_id", "type": ["null", "string"]},
+             {"name": "server_time", "type": ["null", "string"]},
+             {"name": "client_time", "type": ["null", "string"]}
+         ]
     }
 ]
