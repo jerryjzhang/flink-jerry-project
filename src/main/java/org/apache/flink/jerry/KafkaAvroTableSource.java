@@ -125,7 +125,7 @@ public abstract class KafkaAvroTableSource extends KafkaTableSource implements D
 	 * @param <T> Type of the KafkaAvroTableSource produced by the builder.
 	 * @param <B> Type of the KafkaAvroTableSource.Builder subclass.
 	 */
-	protected abstract static class Builder<T extends KafkaAvroTableSource, B extends KafkaAvroTableSource.Builder>
+	public abstract static class Builder<T extends KafkaAvroTableSource, B extends KafkaAvroTableSource.Builder>
 		extends KafkaTableSource.Builder<T, B> {
 
 		private Class<? extends SpecificRecordBase> avroClass;
