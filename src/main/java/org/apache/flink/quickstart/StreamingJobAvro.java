@@ -23,6 +23,7 @@ import org.apache.avro.io.BinaryEncoder;
 import org.apache.avro.io.DatumWriter;
 import org.apache.avro.io.EncoderFactory;
 import org.apache.avro.specific.SpecificDatumWriter;
+import org.apache.flink.api.java.typeutils.ListTypeInfo;
 import org.apache.flink.formats.avro.generated.SdkLog;
 import org.apache.flink.formats.avro.generated.SdkLogOutput;
 import org.apache.flink.formats.avro.generated.SdkLogRecord;
@@ -92,7 +93,7 @@ public class StreamingJobAvro {
 						.field("age", Types.INT)
 						.field("event", Types.MAP(Types.STRING, Types.STRING))
 						.field("intMap", Types.MAP(Types.STRING, Types.INT))
-						.field("strArray", Types.LIST(Types.STRING))
+						.field("strArray", Types.OBJECT_ARRAY(Types.STRING))
 						.field("recMap", Types.MAP(Types.STRING, AvroRecordClassConverter.convert(SdkLogRecord.class)))
 						.build())
 				.withTableToAvroMapping(tableAvroMapping)
@@ -102,7 +103,8 @@ public class StreamingJobAvro {
 		tblEnv.registerTableSource("test", kafkaTable);
 
 		// actual sql query
-		Table result = tblEnv.sqlQuery("SELECT id,name,age from test where event['eventTag'] = '10004' and recMap['jerry'].id = 1986");
+		Table result = tblEnv.sqlQuery("SELECT id,name,age from test where event['eventTag'] = '10004' " +
+				"and recMap['jerry'].id = 1986 and strArray[1] = 'jerryjzhang'");
 		// kafka output
 		Kafka011AvroTableSink kafkaSink = new Kafka011AvroTableSink(OUTPUT_TOPIC, kafkaProps, SdkLogOutput.class);
 		result.writeToSink(kafkaSink);

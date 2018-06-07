@@ -38,6 +38,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.lang.reflect.Array;
 import java.util.*;
 
 /**
@@ -162,7 +163,7 @@ public class AvroRowDeserializationSchema extends AbstractDeserializationSchema<
 			return recordObj.toString();
 		} //added by jerryjzhang: converting avro.UTF8 to string
           // otherwise exception like: "org.apache.avro.util.Utf8 cannot be cast to java.lang.String"
-		  else if (recordObj instanceof Map) {
+		  else if (schema.getType() == Schema.Type.MAP) {
 			Map<String, Object> retObj = new HashMap<>();
 			for(Map.Entry r : (Set<Map.Entry>)((Map)recordObj).entrySet()) {
 			    // avro map key is always string
@@ -172,16 +173,26 @@ public class AvroRowDeserializationSchema extends AbstractDeserializationSchema<
 			return retObj;
 		} //added by jerryjzhang: converting avro.UTF8 to string
           // otherwise exception like: "org.apache.avro.util.Utf8 cannot be cast to java.lang.String"
-		  else if(recordObj instanceof GenericData.Array) {
+		  else if(schema.getType() == Schema.Type.ARRAY) {
 			GenericData.Array arrayObj = (GenericData.Array)recordObj;
-			List<Object> retObj = new ArrayList<>();
-			for(Object obj : arrayObj) {
-				retObj.add(convertToRow(arrayObj.getSchema(), obj));
+			Class elementClass = getClassForType(schema.getElementType().getType());
+			Object[] retArray = (Object[])Array.newInstance(elementClass, arrayObj.size());
+			for(int i=0; i<retArray.length; i++) {
+				retArray[i] = convertToRow(arrayObj.getSchema(), arrayObj.get(i));
 			}
-
-			return retObj;
+			return retArray;
 		} else {
 			return recordObj;
+		}
+	}
+
+	private static Class<?> getClassForType(Schema.Type type) {
+		// check the type of the vector to decide how to read it.
+		switch (type) {
+			case STRING:
+				return String.class;
+			default:
+				throw new IllegalArgumentException("Unsupported type " + type);
 		}
 	}
 

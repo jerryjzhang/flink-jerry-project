@@ -79,7 +79,7 @@ public class StreamingJobAvroCatalog {
 		// actual sql query
 		Table result = tblEnv.sqlQuery("SELECT * from kafka_db.test");
 		// kafka output
-		result.writeToSink(new PrintStreamTableSink(new RowTypeInfo(result.getSchema().getTypes(), result.getSchema().getColumnNames())));
+		result.writeToSink(new PrintStreamTableSink());
 
 		// execute program
 		env.execute("Flink Streaming Java API Skeleton");
