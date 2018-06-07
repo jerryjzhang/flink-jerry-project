@@ -21,6 +21,18 @@
                         ]
                     }
                 }
+             },
+             {"name":"recArray", "type":
+                 {
+                    "type": "array", "items":
+                     {
+                         "type": "record",
+                         "name": "OSInstallRecord",
+                         "fields": [
+                             {"name": "name", "type": "string"}
+                         ]
+                     }
+                 }
              }
           ]
     },

@@ -24,6 +24,7 @@ import org.apache.avro.io.DatumWriter;
 import org.apache.avro.io.EncoderFactory;
 import org.apache.avro.specific.SpecificDatumWriter;
 import org.apache.flink.api.java.typeutils.ListTypeInfo;
+import org.apache.flink.formats.avro.generated.OSInstallRecord;
 import org.apache.flink.formats.avro.generated.SdkLog;
 import org.apache.flink.formats.avro.generated.SdkLogOutput;
 import org.apache.flink.formats.avro.generated.SdkLogRecord;
@@ -84,6 +85,7 @@ public class StreamingJobAvro {
         tableAvroMapping.put("intMap", "intMap");
         tableAvroMapping.put("strArray", "strArray");
 		tableAvroMapping.put("recMap", "recMap");
+		tableAvroMapping.put("recArray", "recArray");
 		Kafka011AvroTableSource.Builder builder = Kafka011AvroTableSource.builder();
 		Kafka011AvroTableSource kafkaTable = builder.forTopic(INPUT_TOPIC)
 				.forAvroRecordClass(SdkLog.class)
@@ -94,7 +96,10 @@ public class StreamingJobAvro {
 						.field("event", Types.MAP(Types.STRING, Types.STRING))
 						.field("intMap", Types.MAP(Types.STRING, Types.INT))
 						.field("strArray", Types.OBJECT_ARRAY(Types.STRING))
-						.field("recMap", Types.MAP(Types.STRING, AvroRecordClassConverter.convert(SdkLogRecord.class)))
+						.field("recMap", Types.MAP(Types.STRING,
+								AvroRecordClassConverter.convert(SdkLogRecord.class)))
+						.field("recArray", Types.OBJECT_ARRAY(
+								AvroRecordClassConverter.convert(OSInstallRecord.class)))
 						.build())
 				.withTableToAvroMapping(tableAvroMapping)
 				.fromEarliest()
@@ -104,7 +109,7 @@ public class StreamingJobAvro {
 
 		// actual sql query
 		Table result = tblEnv.sqlQuery("SELECT id,name,age from test where event['eventTag'] = '10004' " +
-				"and recMap['jerry'].id = 1986 and strArray[1] = 'jerryjzhang'");
+				"and recMap['jerry'].id = 1986 and strArray[1] = 'jerryjzhang' and recArray[1].name = 'huni'");
 		// kafka output
 		Kafka011AvroTableSink kafkaSink = new Kafka011AvroTableSink(OUTPUT_TOPIC, kafkaProps, SdkLogOutput.class);
 		result.writeToSink(kafkaSink);
@@ -142,6 +147,10 @@ public class StreamingJobAvro {
 		SdkLogRecord r = new SdkLogRecord();
 		r.setId(1986);
 		recMap.put("jerry", r);
+		List<OSInstallRecord> recArray = new ArrayList<>();
+		OSInstallRecord or = new OSInstallRecord();
+		or.setName("huni");
+		recArray.add(or);
 		SdkLog record = SdkLog.newBuilder()
 				.setId(1)
 				.setName("jerryjzhang")
@@ -150,6 +159,7 @@ public class StreamingJobAvro {
 				.setIntMap(intMap)
 				.setStrArray(strs)
 				.setRecMap(recMap)
+				.setRecArray(recArray)
 				.build();
 
 		ByteArrayOutputStream out = new ByteArrayOutputStream();

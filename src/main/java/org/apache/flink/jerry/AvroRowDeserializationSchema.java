@@ -17,29 +17,31 @@
 
 package org.apache.flink.jerry;
 
-import org.apache.avro.generic.GenericData;
-import org.apache.avro.specific.SpecificRecordBase;
 import org.apache.flink.api.common.serialization.AbstractDeserializationSchema;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.formats.avro.utils.MutableByteArrayInputStream;
 import org.apache.flink.types.Row;
 import org.apache.flink.util.Preconditions;
 
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.avro.generic.GenericData;
 import org.apache.avro.io.DatumReader;
 import org.apache.avro.io.Decoder;
 import org.apache.avro.io.DecoderFactory;
 import org.apache.avro.specific.SpecificData;
 import org.apache.avro.specific.SpecificDatumReader;
 import org.apache.avro.specific.SpecificRecord;
+import org.apache.avro.specific.SpecificRecordBase;
 import org.apache.avro.util.Utf8;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.lang.reflect.Array;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Deserialization schema from Avro bytes over {@link SpecificRecord} to {@link Row}.
@@ -80,8 +82,10 @@ public class AvroRowDeserializationSchema extends AbstractDeserializationSchema<
 	 */
 	private SpecificRecord record;
 
-	private final TypeInformation<Row> typeInfo;
-
+	/**
+	 * Type information describing the result type.
+	 */
+	private transient TypeInformation<Row> typeInfo;
 
 	/**
 	 * Creates a Avro deserialization schema for the given record.
@@ -159,64 +163,49 @@ public class AvroRowDeserializationSchema extends AbstractDeserializationSchema<
 				row.setField(i, convertToRow(field.schema(), record.get(field.pos())));
 			}
 			return row;
-		} else if (recordObj instanceof Utf8) {
-			return recordObj.toString();
-		} //added by jerryjzhang: converting avro.UTF8 to string
-          // otherwise exception like: "org.apache.avro.util.Utf8 cannot be cast to java.lang.String"
-		  else if (schema.getType() == Schema.Type.MAP) {
-			Map<String, Object> retObj = new HashMap<>();
-			for(Map.Entry r : (Set<Map.Entry>)((Map)recordObj).entrySet()) {
-			    // avro map key is always string
-                retObj.put(r.getKey().toString(), convertToRow(schema.getValueType(), r.getValue()));
+		} else if (schema.getType() == Schema.Type.MAP) {
+			Map mapObj = (Map) recordObj;
+			Map<String, Object> retMap = new HashMap<>();
+			for (Object key : mapObj.keySet()) {
+				retMap.put(key.toString(), convertToRow(schema.getValueType(), mapObj.get(key)));
 			}
-
-			return retObj;
-		} //added by jerryjzhang: converting avro.UTF8 to string
-          // otherwise exception like: "org.apache.avro.util.Utf8 cannot be cast to java.lang.String"
-		  else if(schema.getType() == Schema.Type.ARRAY) {
-			GenericData.Array arrayObj = (GenericData.Array)recordObj;
-			Class elementClass = getClassForType(schema.getElementType().getType());
-			Object[] retArray = (Object[])Array.newInstance(elementClass, arrayObj.size());
-			for(int i=0; i<retArray.length; i++) {
-				retArray[i] = convertToRow(arrayObj.getSchema(), arrayObj.get(i));
+			return retMap;
+		} else if(schema.getType() == Schema.Type.ARRAY) {
+			GenericData.Array arrayObj = (GenericData.Array) recordObj;
+			Class elementClass = getClassForType(schema.getElementType());
+			Object[] retArray = (Object[]) Array.newInstance(elementClass, arrayObj.size());
+			for (int i = 0; i < retArray.length; i++) {
+				retArray[i] = convertToRow(schema.getElementType(), arrayObj.get(i));
 			}
 			return retArray;
+		} else if (recordObj instanceof Utf8) {
+			return recordObj.toString();
 		} else {
 			return recordObj;
 		}
 	}
 
-	private static Class<?> getClassForType(Schema.Type type) {
-		// check the type of the vector to decide how to read it.
-		switch (type) {
+	private static Class<?> getClassForType(Schema schema) {
+		switch (schema.getType()) {
 			case STRING:
 				return String.class;
+			case INT:
+				return Integer.class;
+			case LONG:
+				return Long.class;
+			case FLOAT:
+				return Float.class;
+			case DOUBLE:
+				return Double.class;
+			case BOOLEAN:
+				return Boolean.class;
+			case MAP:
+				return HashMap.class;
+			case RECORD:
+				return Row.class;
 			default:
-				throw new IllegalArgumentException("Unsupported type " + type);
+				throw new UnsupportedOperationException("Unsupported type " + schema.getType());
 		}
 	}
 
-	/**
-	 * An extension of the ByteArrayInputStream that allows to change a buffer that should be
-	 * read without creating a new ByteArrayInputStream instance. This allows to re-use the same
-	 * InputStream instance, copying message to process, and creation of Decoder on every new message.
-	 */
-	private static final class MutableByteArrayInputStream extends ByteArrayInputStream {
-
-		public MutableByteArrayInputStream() {
-			super(new byte[0]);
-		}
-
-		/**
-		 * Set buffer that can be read via the InputStream interface and reset the input stream.
-		 * This has the same effect as creating a new ByteArrayInputStream with a new buffer.
-		 *
-		 * @param buf the new buffer to read.
-		 */
-		public void setBuffer(byte[] buf) {
-			this.buf = buf;
-			this.pos = 0;
-			this.count = buf.length;
-		}
-	}
 }
