@@ -87,6 +87,13 @@ public class AvroRecordClassConverter {
 				elementType = createAvroTypeInfo(schema.getElementType().getFullName());
 			}
 			return Types.OBJECT_ARRAY(convertType(elementType, schema.getElementType()));
+		} else if (schema.getType() == Schema.Type.UNION) {
+			for(Schema s : schema.getTypes()){
+				if (s.getType() == Schema.Type.NULL) {
+					continue;
+				}
+				return convertType(Types.VOID, s);
+			}
 		} else if (schema.getType() == Schema.Type.STRING) {
 			return Types.STRING;
 		} else if (schema.getType() == Schema.Type.INT) {

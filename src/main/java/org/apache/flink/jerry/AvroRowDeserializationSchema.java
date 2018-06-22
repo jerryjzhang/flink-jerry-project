@@ -163,11 +163,12 @@ public class AvroRowDeserializationSchema extends AbstractDeserializationSchema<
 				row.setField(i, convertToRow(field.schema(), record.get(field.pos())));
 			}
 			return row;
-		} else if (schema.getType() == Schema.Type.MAP) {
+		} else if (schema.getType() == Schema.Type.MAP || recordObj instanceof Map) {
 			Map mapObj = (Map) recordObj;
 			Map<String, Object> retMap = new HashMap<>();
 			for (Object key : mapObj.keySet()) {
-				retMap.put(key.toString(), convertToRow(schema.getValueType(), mapObj.get(key)));
+				//retMap.put(key.toString(), convertToRow(schema.getValueType(), mapObj.get(key)));
+				retMap.put(key.toString(), convertToRow(Schema.create(Schema.Type.STRING), mapObj.get(key)));
 			}
 			return retMap;
 		} else if(schema.getType() == Schema.Type.ARRAY) {

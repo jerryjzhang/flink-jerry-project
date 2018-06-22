@@ -23,7 +23,6 @@ import org.apache.avro.io.BinaryEncoder;
 import org.apache.avro.io.DatumWriter;
 import org.apache.avro.io.EncoderFactory;
 import org.apache.avro.specific.SpecificDatumWriter;
-import org.apache.flink.api.java.typeutils.ListTypeInfo;
 import org.apache.flink.formats.avro.generated.OSInstallRecord;
 import org.apache.flink.formats.avro.generated.SdkLog;
 import org.apache.flink.formats.avro.generated.SdkLogOutput;
@@ -44,18 +43,6 @@ import org.apache.kafka.common.utils.Bytes;
 import java.io.ByteArrayOutputStream;
 import java.util.*;
 
-/**
- * Skeleton for a Flink Streaming Job.
- *
- * <p>For a tutorial how to write a Flink streaming application, check the
- * tutorials and examples on the <a href="http://flink.apache.org/docs/stable/">Flink Website</a>.
- *
- * <p>To package your appliation into a JAR file for execution, run
- * 'mvn clean package' on the command line.
- *
- * <p>If you change the name of the main class (with the public static void main(String[] args))
- * method, change the respective entry in the POM.xml file (simply search for 'mainClass').
- */
 public class StreamingJobAvro {
 	private static final String INPUT_TOPIC = "testJerry";
 	private static final String OUTPUT_TOPIC = "outputJerry";
