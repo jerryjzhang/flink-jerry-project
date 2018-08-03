@@ -27,12 +27,17 @@ import org.apache.flink.formats.avro.generated.OSInstallRecord;
 import org.apache.flink.formats.avro.generated.SdkLog;
 import org.apache.flink.formats.avro.generated.SdkLogOutput;
 import org.apache.flink.formats.avro.generated.SdkLogRecord;
-import org.apache.flink.jerry.AvroRecordClassConverter;
-import org.apache.flink.jerry.Kafka011AvroTableSource;
+import org.apache.flink.formats.avro.typeutils.AvroSchemaConverter;
+import org.apache.flink.formats.json.JsonRowSerializationSchema;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.connectors.kafka.Kafka011AvroTableSink;
+import org.apache.flink.streaming.connectors.kafka.Kafka011AvroTableSource;
+import org.apache.flink.streaming.connectors.kafka.Kafka011TableSink;
+import org.apache.flink.streaming.connectors.kafka.partitioner.FlinkFixedPartitioner;
+import org.apache.flink.streaming.connectors.kafka.partitioner.FlinkKafkaDelegatePartitioner;
 import org.apache.flink.table.api.*;
 import org.apache.flink.api.common.typeinfo.Types;
+import org.apache.flink.table.sinks.CsvTableSink;
+import org.apache.flink.types.Row;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.BytesSerializer;
@@ -84,9 +89,9 @@ public class StreamingJobAvro {
 						.field("intMap", Types.MAP(Types.STRING, Types.INT))
 						.field("strArray", Types.OBJECT_ARRAY(Types.STRING))
 						.field("recMap", Types.MAP(Types.STRING,
-								AvroRecordClassConverter.convert(SdkLogRecord.class)))
+								AvroSchemaConverter.convertToTypeInfo(SdkLogRecord.class)))
 						.field("recArray", Types.OBJECT_ARRAY(
-								AvroRecordClassConverter.convert(OSInstallRecord.class)))
+								AvroSchemaConverter.convertToTypeInfo(OSInstallRecord.class)))
 						.build())
 				.withTableToAvroMapping(tableAvroMapping)
 				.fromEarliest()
@@ -98,10 +103,14 @@ public class StreamingJobAvro {
 		Table result = tblEnv.sqlQuery("SELECT id,name,age from test where event['eventTag'] = '10004' " +
 				"and recMap['jerry'].id = 1986 and strArray[1] = 'jerryjzhang' and recArray[1].name = 'huni'");
 		// kafka output
-		Kafka011AvroTableSink kafkaSink = new Kafka011AvroTableSink(OUTPUT_TOPIC, kafkaProps, SdkLogOutput.class);
-		result.writeToSink(kafkaSink);
-		result.writeToSink(new PrintStreamTableSink());
-
+		TableSchema outputSchema = TableSchema.builder()
+				.field("id", Types.INT)
+				.field("name", Types.STRING)
+				.field("age", Types.INT)
+				.build();
+		Kafka011TableSink sink = new Kafka011TableSink(outputSchema, OUTPUT_TOPIC,
+				kafkaProps, Optional.of(new FlinkFixedPartitioner<>()), new JsonRowSerializationSchema(outputSchema.toRowType()));
+		result.writeToSink(new CsvTableSink("/tmp/jerryjzhang", ","));
 		// execute program
 		env.execute("Flink Streaming Java API Skeleton");
 	}

@@ -1,0 +1,27 @@
+[
+    {
+         "namespace": "org.apache.flink.formats.avro.generated",
+         "type": "record",
+         "name": "SdkLogPro",
+         "fields": [
+             {"name": "imei", "type": ["null", "string"]},
+             {"name": "model", "type": ["null", "string"]},
+             {"name": "os_version", "type": ["null", "string"]},
+             {"name": "system_id", "type": ["null", "string"]},
+             {"name": "ssoid", "type": ["null", "long"]},
+             {"name": "app_version", "type": ["null", "string"]},
+             {"name": "rom_version", "type": ["null", "string"]},
+             {"name": "channel_id", "type": ["null", "int"]},
+             {"name": "event_id", "type": ["null", "string"]},
+             {"name": "duration", "type": ["null", "int"]},
+             {"name": "event_time", "type": ["null", "long"]},
+             {"name": "event_count", "type": ["null", "int"]},
+             {"name": "client_ip", "type": ["null", "string"]},
+             {"name": "network_type", "type": ["null", "string"]},
+             {"name": "event_info", "type": ["null", {"type": "map", "values": "string"}]},
+             {"name": "android_version", "type": ["null", "string"]},
+             {"name": "sdk_version", "type": ["null", "string"]},
+             {"name": "server_time", "type": ["null", "string"]}
+          ]
+    }
+]
