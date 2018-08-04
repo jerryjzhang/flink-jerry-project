@@ -77,7 +77,7 @@ public class StreamingJobAvroCatalog {
         initializeTableSource(tblEnv);
 
 		// actual sql query
-		Table result = tblEnv.sqlQuery("SELECT id,name,age from kafka_db.test where id=1");
+		Table result = tblEnv.sqlQuery("SELECT id,name,age from kafka_db.test where event['eventTag'] = '10004'");
 		// kafka output
 		TableSchema outputSchema = TableSchema.builder()
 				.field("id", Types.INT)
@@ -111,7 +111,8 @@ public class StreamingJobAvroCatalog {
 		Schema schemaDesc = new Schema()
 				.field("id", Types.INT)
 				.field("name", Types.STRING)
-				.field("age", Types.INT);
+				.field("age", Types.INT)
+				.field("event", Types.MAP(Types.STRING, Types.STRING));
 		// create and register external table
 		ExternalCatalogTableBuilder builder = new ExternalCatalogTableBuilder(connectorDescriptor);
 		builder.withFormat(formatDescriptor).withSchema(schemaDesc).inAppendMode();
