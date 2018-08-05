@@ -38,8 +38,12 @@ import org.apache.flink.table.api.TableEnvironment;
 import org.apache.flink.table.api.TableSchema;
 import org.apache.flink.table.catalog.ExternalCatalogTable;
 import org.apache.flink.table.catalog.ExternalCatalogTableBuilder;
+import org.apache.flink.table.catalog.ExternalTableUtil;
 import org.apache.flink.table.catalog.InMemoryExternalCatalog;
 import org.apache.flink.table.descriptors.*;
+import org.apache.flink.table.factories.StreamTableSinkFactory;
+import org.apache.flink.table.factories.TableFactoryService;
+import org.apache.flink.table.factories.TableFactoryUtil;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.BytesSerializer;
@@ -83,7 +87,7 @@ public class StreamingJobAvroCatalog {
 
 		// initialize and register external table catalog
 		InMemoryExternalCatalog catalog = new InMemoryExternalCatalog("kafka_db");
-		tblEnv.registerExternalCatalog("kafka_db", catalog);
+		tblEnv.registerExternalCatalog("dw", catalog);
 
 		// init table source and sink
         initializeTableSource(catalog);
@@ -101,12 +105,16 @@ public class StreamingJobAvroCatalog {
 		kafkaProps.put("bootstrap.servers", KAFKA_CONN_STR);
 		kafkaProps.put("group.id", "jerryConsumer");
 
-		Kafka011TableSink sink = new Kafka011TableSink(TableSchema.fromTypeInfo(AvroSchemaConverter.convertToTypeInfo(OUTPUT_AVRO_SCHEMA)),
-				OUTPUT_TOPIC, kafkaProps, Optional.of(new FlinkFixedPartitioner<>()), new AvroRowSerializationSchema(OUTPUT_AVRO_SCHEMA));
-		tblEnv.registerTableSink("output", sink);
+		// Approach 1: Create sink directly and register sink
+//		Kafka011TableSink sink = new Kafka011TableSink(TableSchema.fromTypeInfo(AvroSchemaConverter.convertToTypeInfo(OUTPUT_AVRO_SCHEMA)),
+//				OUTPUT_TOPIC, kafkaProps, Optional.of(new FlinkFixedPartitioner<>()), new AvroRowSerializationSchema(OUTPUT_AVRO_SCHEMA));
+//		tblEnv.registerTableSink("dw.output", sink);
+//		tblEnv.sqlUpdate("insert into `dw.output` SELECT id,name,age from dw.test where event['eventTag'] = '10004'");
 
-		// actual sql query
-		tblEnv.sqlUpdate("insert into output SELECT id,name,age from kafka_db.test where event['eventTag'] = '10004'");
+		// Approach 2: Get sink from ExternalCatalog and register sink
+		ExternalCatalogTable table = tblEnv.getRegisteredExternalCatalog("dw").getTable("output");
+		tblEnv.registerTableSink("dw.output", TableFactoryUtil.findAndCreateTableSink(tblEnv, table));
+		tblEnv.sqlUpdate("insert into `dw.output` SELECT id,name,age from dw.test where event['eventTag'] = '10004'");
 	}
 
 	static void insertByAPI(TableEnvironment tblEnv) {
@@ -115,11 +123,17 @@ public class StreamingJobAvroCatalog {
 		kafkaProps.put("bootstrap.servers", KAFKA_CONN_STR);
 		kafkaProps.put("group.id", "jerryConsumer");
 
-		Table result = tblEnv.sqlQuery("SELECT id,name,age from kafka_db.test where event['eventTag'] = '10004'");
-		Kafka011TableSink sink = new Kafka011TableSink(TableSchema.fromTypeInfo(AvroSchemaConverter.convertToTypeInfo(OUTPUT_AVRO_SCHEMA)),
-				OUTPUT_TOPIC, kafkaProps, Optional.of(new FlinkFixedPartitioner<>()), new AvroRowSerializationSchema(OUTPUT_AVRO_SCHEMA));
-		//result.writeToSink(new CsvTableSink("/tmp/jerryjzhang", ","));
-		result.writeToSink(sink);
+		// Approach 1: Create sink directly and register sink
+//		Table result = tblEnv.sqlQuery("SELECT id,name,age from dw.test where event['eventTag'] = '10004'");
+//		Kafka011TableSink sink = new Kafka011TableSink(TableSchema.fromTypeInfo(AvroSchemaConverter.convertToTypeInfo(OUTPUT_AVRO_SCHEMA)),
+//				OUTPUT_TOPIC, kafkaProps, Optional.of(new FlinkFixedPartitioner<>()), new AvroRowSerializationSchema(OUTPUT_AVRO_SCHEMA));
+//		//result.writeToSink(new CsvTableSink("/tmp/jerryjzhang", ","));
+//		result.writeToSink(sink);
+
+		// Approach 2: Get sink from ExternalCatalog and register sink
+		Table result = tblEnv.sqlQuery("SELECT id,name,age from dw.test where event['eventTag'] = '10004'");
+		ExternalCatalogTable table = tblEnv.getRegisteredExternalCatalog("dw").getTable("output");
+		result.writeToSink(TableFactoryUtil.findAndCreateTableSink(tblEnv, table));
 	}
 
 	static void initializeTableSource(InMemoryExternalCatalog catalog){
@@ -158,7 +172,7 @@ public class StreamingJobAvroCatalog {
 				.properties(kafkaProps)
 				.startFromEarliest();
 		FormatDescriptor formatDescriptor = new Avro().avroSchema(OUTPUT_AVRO_SCHEMA);
-		Schema schemaDesc = new Schema().schema(TableSchema.fromTypeInfo(AvroSchemaConverter.convertToTypeInfo(AVRO_SCHEMA)));
+		Schema schemaDesc = new Schema().schema(TableSchema.fromTypeInfo(AvroSchemaConverter.convertToTypeInfo(OUTPUT_AVRO_SCHEMA)));
 		// create and register external table
 		ExternalCatalogTable kafkaTable = new ExternalCatalogTableBuilder(connectorDescriptor)
 				.withFormat(formatDescriptor).withSchema(schemaDesc).inAppendMode().asTableSink();

@@ -47,7 +47,8 @@ under the License.
 				<enabled>false</enabled>
 			</releases>
 			<snapshots>
-				<enabled>true</enabled>
+				<enabled>false</enabled>
+				<updatePolicy>never</updatePolicy>
 			</snapshots>
 		</repository>
 	</repositories>
@@ -164,6 +165,11 @@ under the License.
 			<groupId>commons-codec</groupId>
 			<artifactId>commons-codec</artifactId>
 			<version>1.10</version>
+		</dependency>
+		<dependency>
+			<groupId>com.google.collections</groupId>
+			<artifactId>google-collections</artifactId>
+			<version>0.9</version>
 		</dependency>
 	</dependencies>
 
