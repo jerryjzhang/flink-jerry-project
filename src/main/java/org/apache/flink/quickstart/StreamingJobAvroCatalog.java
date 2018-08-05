@@ -51,7 +51,6 @@ import java.util.*;
 
 public class StreamingJobAvroCatalog {
 	private static final String AVRO_SCHEMA = "{\n" +
-			"         \"namespace\": \"org.apache.flink.formats.avro.generated\",\n" +
 			"         \"type\": \"record\",\n" +
 			"         \"name\": \"SdkLog\",\n" +
 			"         \"fields\": [\n" +
@@ -61,9 +60,8 @@ public class StreamingJobAvroCatalog {
 			"             {\"name\":\"event\", \"type\": {\"type\": \"map\", \"values\": \"string\"}}]" +
 			"}";
 	private static final String OUTPUT_AVRO_SCHEMA = "{\n" +
-			"         \"namespace\": \"org.apache.flink.formats.avro.generated\",\n" +
 			"         \"type\": \"record\",\n" +
-			"         \"name\": \"SdkLog\",\n" +
+			"         \"name\": \"SdkLogOutput\",\n" +
 			"         \"fields\": [\n" +
 			"             {\"name\": \"id\", \"type\": \"int\"},\n" +
 			"             {\"name\": \"name\", \"type\": [\"null\", \"string\"]},\n" +
@@ -101,7 +99,6 @@ public class StreamingJobAvroCatalog {
 		// kafka related configs
 		Properties kafkaProps = new Properties();
 		kafkaProps.put("bootstrap.servers", KAFKA_CONN_STR);
-		kafkaProps.put("zookeeper.connect", Zk_CONN_STR);
 		kafkaProps.put("group.id", "jerryConsumer");
 
 		Kafka011TableSink sink = new Kafka011TableSink(TableSchema.fromTypeInfo(AvroSchemaConverter.convertToTypeInfo(OUTPUT_AVRO_SCHEMA)),
@@ -116,7 +113,6 @@ public class StreamingJobAvroCatalog {
 		// kafka related configs
 		Properties kafkaProps = new Properties();
 		kafkaProps.put("bootstrap.servers", KAFKA_CONN_STR);
-		kafkaProps.put("zookeeper.connect", Zk_CONN_STR);
 		kafkaProps.put("group.id", "jerryConsumer");
 
 		Table result = tblEnv.sqlQuery("SELECT id,name,age from kafka_db.test where event['eventTag'] = '10004'");
