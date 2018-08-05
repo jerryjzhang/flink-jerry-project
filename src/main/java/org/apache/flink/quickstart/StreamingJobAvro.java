@@ -31,6 +31,7 @@ import org.apache.flink.formats.json.JsonRowSerializationSchema;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.connectors.kafka.Kafka011AvroTableSource;
 import org.apache.flink.streaming.connectors.kafka.Kafka011TableSink;
+import org.apache.flink.streaming.connectors.kafka.KafkaTableSink;
 import org.apache.flink.streaming.connectors.kafka.partitioner.FlinkFixedPartitioner;
 import org.apache.flink.table.api.*;
 import org.apache.flink.api.common.typeinfo.Types;
