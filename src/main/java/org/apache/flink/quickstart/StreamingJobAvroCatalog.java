@@ -112,8 +112,8 @@ public class StreamingJobAvroCatalog {
 //		tblEnv.sqlUpdate("insert into `dw.output` SELECT id,name,age from dw.test where event['eventTag'] = '10004'");
 
 		// Approach 2: Get sink from ExternalCatalog and register sink
-		ExternalCatalogTable table = tblEnv.getRegisteredExternalCatalog("dw").getTable("output");
-		tblEnv.registerTableSink("dw.output", TableFactoryUtil.findAndCreateTableSink(tblEnv, table));
+		//ExternalCatalogTable table = tblEnv.getRegisteredExternalCatalog("dw").getTable("output");
+		//tblEnv.registerTableSink("dw.output", TableFactoryUtil.findAndCreateTableSink(tblEnv, table));
 		tblEnv.sqlUpdate("insert into `dw.output` SELECT id,name,age from dw.test where event['eventTag'] = '10004'");
 	}
 

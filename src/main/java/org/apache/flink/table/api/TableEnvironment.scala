@@ -47,7 +47,7 @@ import org.apache.flink.streaming.api.scala.{StreamExecutionEnvironment => Scala
 import org.apache.flink.table.api.java.{BatchTableEnvironment => JavaBatchTableEnv, StreamTableEnvironment => JavaStreamTableEnv}
 import org.apache.flink.table.api.scala.{BatchTableEnvironment => ScalaBatchTableEnv, StreamTableEnvironment => ScalaStreamTableEnv}
 import org.apache.flink.table.calcite.{FlinkPlannerImpl, FlinkRelBuilder, FlinkTypeFactory, FlinkTypeSystem}
-import org.apache.flink.table.catalog.{ExternalCatalog, ExternalCatalogSchema}
+import org.apache.flink.table.catalog.{ExternalCatalogTable, ExternalCatalog, ExternalCatalogSchema}
 import org.apache.flink.table.codegen.{ExpressionReducer, FunctionCodeGenerator, GeneratedFunction}
 import org.apache.flink.table.descriptors.{ConnectorDescriptor, TableDescriptor}
 import org.apache.flink.table.expressions._
@@ -751,10 +751,22 @@ abstract class TableEnvironment(val config: TableConfig) {
     if (null == sinkTableName) throw TableException("Name of TableSink must not be null.")
     if (sinkTableName.isEmpty) throw TableException("Name of TableSink must not be empty.")
     if (!isRegistered(sinkTableName)) {
-//      var tableNames = sinkTableName.split("\\.")
-//      registerTableSink(sinkTableName, TableFactoryUtil.findAndCreateTableSink(this,
-//        getRegisteredExternalCatalog(tableNames(0)).getTable(tableNames(1))))
+      if (sinkTableName.contains(".")) {
+        var Array(catalog, tableName) = sinkTableName.split("\\.", 2)
+        try {
+          var externalTable = getRegisteredExternalCatalog(catalog).getTable(tableName)
+          if (externalTable.isTableSink) {
+            registerTableSink(sinkTableName, TableFactoryUtil.findAndCreateTableSink(this, externalTable))
+          } else {
+            throw TableException(s"No table was registered under the name $sinkTableName.")
+          }
+        } catch {
+          case _: ExternalCatalogNotExistException | _: TableNotExistException =>
+            throw TableException(s"No table was registered under the name $sinkTableName.")
+        }
+      } else {
         throw TableException(s"No table was registered under the name $sinkTableName.")
+      }
     }
 
     getTable(sinkTableName) match {
