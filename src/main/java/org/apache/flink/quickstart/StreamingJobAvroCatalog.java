@@ -44,6 +44,7 @@ import org.apache.flink.table.descriptors.*;
 import org.apache.flink.table.factories.StreamTableSinkFactory;
 import org.apache.flink.table.factories.TableFactoryService;
 import org.apache.flink.table.factories.TableFactoryUtil;
+import org.apache.flink.table.sinks.TableSink;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.BytesSerializer;
@@ -99,7 +100,7 @@ public class StreamingJobAvroCatalog {
 		env.execute("Flink Streaming Java API Skeleton");
 	}
 
-	static void insertBySQL(TableEnvironment tblEnv) {
+	static void insertBySQL(StreamTableEnvironment tblEnv) {
 		// kafka related configs
 		Properties kafkaProps = new Properties();
 		kafkaProps.put("bootstrap.servers", KAFKA_CONN_STR);
@@ -117,7 +118,7 @@ public class StreamingJobAvroCatalog {
 		tblEnv.sqlUpdate("insert into `dw.output` SELECT id,name,age from dw.test where event['eventTag'] = '10004'");
 	}
 
-	static void insertByAPI(TableEnvironment tblEnv) {
+	static void insertByAPI(StreamTableEnvironment tblEnv) {
 		// kafka related configs
 		Properties kafkaProps = new Properties();
 		kafkaProps.put("bootstrap.servers", KAFKA_CONN_STR);
@@ -125,9 +126,12 @@ public class StreamingJobAvroCatalog {
 
 		// Approach 1: Create sink directly and register sink
 //		Table result = tblEnv.sqlQuery("SELECT id,name,age from dw.test where event['eventTag'] = '10004'");
-//		Kafka011TableSink sink = new Kafka011TableSink(TableSchema.fromTypeInfo(AvroSchemaConverter.convertToTypeInfo(OUTPUT_AVRO_SCHEMA)),
-//				OUTPUT_TOPIC, kafkaProps, Optional.of(new FlinkFixedPartitioner<>()), new AvroRowSerializationSchema(OUTPUT_AVRO_SCHEMA));
-//		//result.writeToSink(new CsvTableSink("/tmp/jerryjzhang", ","));
+//		StreamTableDescriptor descriptor = tblEnv.connect(new Kafka().version("0.11").topic(OUTPUT_TOPIC).properties(kafkaProps).startFromEarliest())
+//				.withFormat(new Avro().avroSchema(OUTPUT_AVRO_SCHEMA))
+//				.withSchema(new Schema().schema(TableSchema.fromTypeInfo(AvroSchemaConverter.convertToTypeInfo(OUTPUT_AVRO_SCHEMA))))
+//				.inAppendMode();
+//		descriptor.registerTableSink("output");
+//		TableSink sink = TableFactoryUtil.findAndCreateTableSink(tblEnv, descriptor);
 //		result.writeToSink(sink);
 
 		// Approach 2: Get sink from ExternalCatalog and register sink
