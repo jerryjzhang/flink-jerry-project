@@ -35,6 +35,7 @@ import org.apache.flink.streaming.connectors.kafka.KafkaTableSink;
 import org.apache.flink.streaming.connectors.kafka.partitioner.FlinkFixedPartitioner;
 import org.apache.flink.table.api.*;
 import org.apache.flink.api.common.typeinfo.Types;
+import org.apache.flink.table.functions.ScalarFunction;
 import org.apache.flink.table.sinks.CsvTableSink;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -97,8 +98,10 @@ public class StreamingJobAvro {
 				.build();
 		tblEnv.registerTableSource("test", kafkaTable);
 
+		tblEnv.registerFunction("doubleFunc", new DoubleInt());
+
 		// actual sql query
-		Table result = tblEnv.sqlQuery("SELECT id,name,age from test where event['eventTag'] = '10004' " +
+		Table result = tblEnv.sqlQuery("SELECT id,name,doubleFunc(age) from test where event['eventTag'] = '10004' " +
 				"and recMap['jerry'].id = 1986 and strArray[1] = 'jerryjzhang' and recArray[1].name = 'huni'");
 		// kafka output
 		TableSchema outputSchema = TableSchema.builder()
@@ -163,5 +166,11 @@ public class StreamingJobAvro {
 		encoder.flush();
 		out.close();
 		return out.toByteArray();
+	}
+
+	public static class DoubleInt extends ScalarFunction {
+		public int eval(int s) {
+			return s * 2;
+		}
 	}
 }
