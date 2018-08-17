@@ -751,20 +751,28 @@ abstract class TableEnvironment(val config: TableConfig) {
     if (null == sinkTableName) throw TableException("Name of TableSink must not be null.")
     if (sinkTableName.isEmpty) throw TableException("Name of TableSink must not be empty.")
     if (!isRegistered(sinkTableName)) {
+      // try resolving sink table name from registered external catalogs
       if (sinkTableName.contains(".")) {
-        var Array(catalog, tableName) = sinkTableName.split("\\.", 2)
+        val Array(catalog, tableName) = sinkTableName.split("\\.", 2)
         try {
-          var externalTable = getRegisteredExternalCatalog(catalog).getTable(tableName)
+          var externalCatalog = getRegisteredExternalCatalog(catalog)
+          var externalTableName = tableName
+          while (externalTableName.contains(".")) {
+            val Array(subcatalog, table) = tableName.split("\\.", 2)
+            externalCatalog = externalCatalog.getSubCatalog(subcatalog)
+            externalTableName = table
+          }
+          val externalTable = externalCatalog.getTable(externalTableName)
           if (externalTable.isTableSink) {
             registerTableSink(sinkTableName, TableFactoryUtil.findAndCreateTableSink(this, externalTable))
-          } else {
-            throw TableException(s"No table was registered under the name $sinkTableName.")
           }
         } catch {
-          case _: ExternalCatalogNotExistException | _: TableNotExistException =>
+          case _: ExternalCatalogNotExistException | _: CatalogNotExistException | _: TableNotExistException =>
             throw TableException(s"No table was registered under the name $sinkTableName.")
         }
-      } else {
+      }
+
+      if (!isRegistered(sinkTableName)) {
         throw TableException(s"No table was registered under the name $sinkTableName.")
       }
     }

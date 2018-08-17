@@ -27,15 +27,13 @@ import org.apache.flink.formats.avro.generated.OSInstallRecord;
 import org.apache.flink.formats.avro.generated.SdkLog;
 import org.apache.flink.formats.avro.generated.SdkLogRecord;
 import org.apache.flink.formats.avro.typeutils.AvroSchemaConverter;
-import org.apache.flink.formats.json.JsonRowSerializationSchema;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.connectors.kafka.Kafka011AvroTableSource;
-import org.apache.flink.streaming.connectors.kafka.Kafka011TableSink;
-import org.apache.flink.streaming.connectors.kafka.KafkaTableSink;
-import org.apache.flink.streaming.connectors.kafka.partitioner.FlinkFixedPartitioner;
-import org.apache.flink.table.api.*;
-import org.apache.flink.api.common.typeinfo.Types;
+import org.apache.flink.table.api.StreamTableEnvironment;
+import org.apache.flink.table.api.Table;
+import org.apache.flink.table.api.TableEnvironment;
+import org.apache.flink.table.api.TableSchema;
 import org.apache.flink.table.descriptors.Avro;
+import org.apache.flink.table.descriptors.Csv;
 import org.apache.flink.table.descriptors.Kafka;
 import org.apache.flink.table.descriptors.Schema;
 import org.apache.flink.table.functions.ScalarFunction;
@@ -46,11 +44,10 @@ import org.apache.kafka.common.serialization.BytesSerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.common.utils.Bytes;
 
-
 import java.io.ByteArrayOutputStream;
 import java.util.*;
 
-public class StreamingJobAvro {
+public class StreamingJobCsv {
 	private static final String INPUT_TOPIC = "testJerry";
 	private static final String OUTPUT_TOPIC = "outputJerry";
 	private static final String KAFKA_CONN_STR = "localhost:5001";
@@ -73,7 +70,7 @@ public class StreamingJobAvro {
 		// kafka input
 		tblEnv.connect(new Kafka().version("0.10")
 				.topic(INPUT_TOPIC).properties(kafkaProps).startFromEarliest())
-				.withFormat(new Avro().recordClass(SdkLog.class))
+				.withFormat(new Csv().fieldDelimiter("\t").schema(TableSchema.fromTypeInfo(AvroSchemaConverter.convertToTypeInfo(SdkLog.class))))
 				.withSchema(new Schema().schema(TableSchema.fromTypeInfo(AvroSchemaConverter.convertToTypeInfo(SdkLog.class))))
 				.inAppendMode()
 				.registerTableSource("test");
@@ -103,36 +100,9 @@ public class StreamingJobAvro {
 		producer.send(message);
 	}
 
-	private static byte[] generateTestMessage()throws Exception{
-		Map<CharSequence, CharSequence> event = new HashMap<>();
-		event.put("eventTag", "10004");
-		event.put("eventLog", "info");
-		Map<CharSequence, Integer> intMap = new HashMap<>();
-		intMap.put("id", 1986);
-		List<CharSequence> strs = new ArrayList<>();
-		strs.add("jerryjzhang");
-		Map<CharSequence, SdkLogRecord> recMap = new HashMap<>();
-		SdkLogRecord r = new SdkLogRecord();
-		r.setId(1986);
-		recMap.put("jerry", r);
-		List<OSInstallRecord> recArray = new ArrayList<>();
-		OSInstallRecord or = new OSInstallRecord();
-		or.setName("huni");
-		recArray.add(or);
-		SdkLog record = SdkLog.newBuilder()
-				.setId(1)
-				.setName("jerryjzhang")
-				.setAge(32)
-				.setEvent(event)
-				.build();
-
-		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		BinaryEncoder encoder = EncoderFactory.get().binaryEncoder(out, null);
-		DatumWriter<SdkLog> writer = new SpecificDatumWriter<>(SdkLog.getClassSchema());
-		writer.write(record, encoder);
-		encoder.flush();
-		out.close();
-		return out.toByteArray();
+	private static byte[] generateTestMessage() {
+		String message = "1\tjerryjzhang\t32\teventTag:10004,eventId:1000";
+		return message.getBytes();
 	}
 
 	public static class DoubleInt extends ScalarFunction {

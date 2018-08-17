@@ -4,46 +4,10 @@
          "type": "record",
          "name": "SdkLog",
          "fields": [
-             {"name": "id", "type": "int"},
+             {"name": "id", "type": ["null", "int"]},
              {"name": "name", "type": ["null", "string"]},
              {"name": "age", "type": ["null", "int"]},
-             {"name":"event", "type": {"type": "map", "values": "string"}},
-             {"name":"intMap", "type": {"type": "map", "values": "int"}},
-             {"name":"strArray", "type": {"type": "array", "items": "string"}},
-             {"name":"recMap", "type":
-                {
-                   "type": "map", "values":
-                    {
-                        "type": "record",
-                        "name": "SdkLogRecord",
-                        "fields": [
-                            {"name": "id", "type": "int"}
-                        ]
-                    }
-                }
-             },
-             {"name":"recArray", "type":
-                 {
-                    "type": "array", "items":
-                     {
-                         "type": "record",
-                         "name": "OSInstallRecord",
-                         "fields": [
-                             {"name": "name", "type": "string"}
-                         ]
-                     }
-                 }
-             }
-          ]
-    },
-    {
-         "namespace": "org.apache.flink.formats.avro.generated",
-         "type": "record",
-         "name": "SdkLogOutput",
-         "fields": [
-             {"name": "id", "type": "int"},
-             {"name": "name", "type": "string"},
-             {"name": "age", "type": "int"}
+             {"name":"event", "type": {"type": "map", "values": "string"}}
           ]
     },
     {

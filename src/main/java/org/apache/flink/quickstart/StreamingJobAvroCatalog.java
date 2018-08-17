@@ -59,7 +59,7 @@ public class StreamingJobAvroCatalog {
 			"         \"type\": \"record\",\n" +
 			"         \"name\": \"SdkLog\",\n" +
 			"         \"fields\": [\n" +
-			"             {\"name\": \"id\", \"type\": \"int\"},\n" +
+			"             {\"name\": \"id\", \"type\": [\"null\", \"int\"]},\n" +
 			"             {\"name\": \"name\", \"type\": [\"null\", \"string\"]},\n" +
 			"             {\"name\": \"age\", \"type\": [\"null\", \"int\"]},\n" +
 			"             {\"name\":\"event\", \"type\": {\"type\": \"map\", \"values\": \"string\"}}]" +
@@ -68,7 +68,7 @@ public class StreamingJobAvroCatalog {
 			"         \"type\": \"record\",\n" +
 			"         \"name\": \"SdkLogOutput\",\n" +
 			"         \"fields\": [\n" +
-			"             {\"name\": \"id\", \"type\": \"int\"},\n" +
+			"             {\"name\": \"id\", \"type\": [\"null\", \"int\"]},\n" +
 			"             {\"name\": \"name\", \"type\": [\"null\", \"string\"]},\n" +
 			"             {\"name\": \"age\", \"type\": [\"null\", \"int\"]}]" +
 			"}";
@@ -221,10 +221,6 @@ public class StreamingJobAvroCatalog {
 				.setName("jerryjzhang")
 				.setAge(32)
 				.setEvent(event)
-				.setIntMap(intMap)
-				.setStrArray(strs)
-				.setRecMap(recMap)
-				.setRecArray(recArray)
 				.build();
 
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
