@@ -70,7 +70,7 @@ public class StreamingJobCsv {
 		// kafka input
 		tblEnv.connect(new Kafka().version("0.10")
 				.topic(INPUT_TOPIC).properties(kafkaProps).startFromEarliest())
-				.withFormat(new Csv().fieldDelimiter("\t").schema(TableSchema.fromTypeInfo(AvroSchemaConverter.convertToTypeInfo(SdkLog.class))))
+				.withFormat(new Csv().schema(TableSchema.fromTypeInfo(AvroSchemaConverter.convertToTypeInfo(SdkLog.class))))
 				.withSchema(new Schema().schema(TableSchema.fromTypeInfo(AvroSchemaConverter.convertToTypeInfo(SdkLog.class))))
 				.inAppendMode()
 				.registerTableSource("test");
