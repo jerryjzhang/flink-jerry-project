@@ -23,7 +23,7 @@ import java.io.Serializable
 import org.apache.commons.codec.binary.Base64
 import org.apache.commons.lang3.StringEscapeUtils
 import org.apache.flink.api.common.functions.InvalidTypesException
-import org.apache.flink.api.common.typeinfo.{BasicArrayTypeInfo, PrimitiveArrayTypeInfo, TypeInformation}
+import org.apache.flink.api.common.typeinfo.{TypeInformation, BasicArrayTypeInfo, PrimitiveArrayTypeInfo}
 import org.apache.flink.api.common.typeutils.CompositeType
 import org.apache.flink.api.java.typeutils._
 import org.apache.flink.table.api.{TableException, Types, ValidationException}
@@ -68,6 +68,7 @@ object TypeStringUtils extends JavaTokenParsers with PackratParsers {
   lazy val ANY: Keyword = Keyword("ANY")
   lazy val POJO: Keyword = Keyword("POJO")
   lazy val MAP: Keyword = Keyword("MAP")
+  lazy val MULTISET: Keyword = Keyword("MULTISET")
 
   lazy val qualifiedName: Parser[String] =
     """\p{javaJavaIdentifierStart}[\p{javaJavaIdentifierPart}.]*""".r
@@ -76,8 +77,7 @@ object TypeStringUtils extends JavaTokenParsers with PackratParsers {
     """[A-Za-z0-9_-]*""".r
 
   lazy val atomic: PackratParser[TypeInformation[_]] =
-      MAP ^^ { e => Types.MAP(Types.STRING, Types.STRING) } |
-    (VARCHAR | STRING) ^^ { e => Types.STRING } |
+      (VARCHAR | STRING) ^^ { e => Types.STRING } |
       BOOLEAN ^^ { e => Types.BOOLEAN } |
       (TINYINT | BYTE) ^^ { e => Types.BYTE } |
       (SMALLINT | SHORT) ^^ { e => Types.SHORT } |
@@ -142,8 +142,23 @@ object TypeStringUtils extends JavaTokenParsers with PackratParsers {
         typeInfo
     }
 
+  lazy val genericMap: PackratParser[TypeInformation[_]] =
+    MAP ~ "<" ~ typeInfo ~ "," ~ typeInfo ~ ">" ^^ {
+      case _ ~ _ ~ keyTypeInfo ~ _ ~ valueTypeInfo ~ _=>
+        Types.MAP(keyTypeInfo, valueTypeInfo)
+    }
+
+  lazy val multiSet: PackratParser[TypeInformation[_]] =
+    MULTISET ~ "<" ~ typeInfo ~ ">" ^^ {
+      case _ ~ _ ~ elementTypeInfo ~ _ =>
+        Types.MULTISET(elementTypeInfo)
+    }
+
+  lazy val map: PackratParser[TypeInformation[_]] =
+    genericMap | multiSet
+
   lazy val typeInfo: PackratParser[TypeInformation[_]] =
-    namedRow | unnamedRow | any | generic | pojo | atomic | failure("Invalid type.")
+    namedRow | unnamedRow | any | generic | pojo | atomic | map | failure("Invalid type.")
 
   def readTypeInfo(typeString: String): TypeInformation[_] = {
     parseAll(typeInfo, typeString) match {
@@ -211,12 +226,32 @@ object TypeStringUtils extends JavaTokenParsers with PackratParsers {
          _: PrimitiveArrayTypeInfo[_] =>
       throw new TableException("A string representation for array types is not supported yet.")
 
-    case _: MapTypeInfo[_, _] | _: MultisetTypeInfo[_] =>
-      MAP.key
-      //throw new TableException("A string representation for map types is not supported yet.")
+    case set: MultisetTypeInfo[_] =>
+      val normalizedElement = normalizeTypeInfo(set.getElementTypeInfo)
+      s"${MULTISET.key}<${normalizedElement}>"
+
+    case map: MapTypeInfo[_, _] =>
+      val normalizedKey = normalizeTypeInfo(map.getKeyTypeInfo)
+      val normalizedValue = normalizeTypeInfo(map.getValueTypeInfo)
+      s"${MAP.key}<${normalizedKey},${normalizedValue}>"
 
     case any: TypeInformation[_] =>
       s"${ANY.key}(${any.getTypeClass.getName}, ${serialize(any)})"
+  }
+
+  def main(args: Array[String]): Unit = {
+    val typ0 = new RowTypeInfo(Types.STRING, Types.BYTE)
+    val typ = new MapTypeInfo(Types.STRING, typ0)
+    val str = TypeStringUtils.writeTypeInfo(typ)
+    println(s"$str")
+    val result = TypeStringUtils.readTypeInfo(str)
+    println(s"$result")
+
+    val set = new MultisetTypeInfo(typ)
+    val setStr = TypeStringUtils.writeTypeInfo(set)
+    println(s"$setStr")
+    val setRet = TypeStringUtils.readTypeInfo(setStr)
+    println(s"$setRet")
   }
 
   // ----------------------------------------------------------------------------------------------
