@@ -19,20 +19,13 @@
 package org.apache.flink.quickstart;
 
 import info.batey.kafka.unit.KafkaUnit;
-import org.apache.avro.io.BinaryEncoder;
-import org.apache.avro.io.DatumWriter;
-import org.apache.avro.io.EncoderFactory;
-import org.apache.avro.specific.SpecificDatumWriter;
-import org.apache.flink.formats.avro.generated.OSInstallRecord;
 import org.apache.flink.formats.avro.generated.SdkLog;
-import org.apache.flink.formats.avro.generated.SdkLogRecord;
 import org.apache.flink.formats.avro.typeutils.AvroSchemaConverter;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.StreamTableEnvironment;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.TableEnvironment;
 import org.apache.flink.table.api.TableSchema;
-import org.apache.flink.table.descriptors.Avro;
 import org.apache.flink.table.descriptors.Csv;
 import org.apache.flink.table.descriptors.Kafka;
 import org.apache.flink.table.descriptors.Schema;
@@ -44,7 +37,6 @@ import org.apache.kafka.common.serialization.BytesSerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.common.utils.Bytes;
 
-import java.io.ByteArrayOutputStream;
 import java.util.*;
 
 public class StreamingJobCsv {
