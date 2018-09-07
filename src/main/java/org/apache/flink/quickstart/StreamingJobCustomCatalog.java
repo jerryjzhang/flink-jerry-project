@@ -129,10 +129,13 @@ public class StreamingJobCustomCatalog {
 				.properties(kafkaProps)
 				.startFromEarliest();
 		FormatDescriptor formatDescriptor = new Avro().avroSchema(AVRO_SCHEMA);
+        Schema schemaDesc = new Schema().schema(TableSchema.fromTypeInfo(
+                AvroSchemaConverter.convertToTypeInfo(AVRO_SCHEMA)));
 		// create and register external table
 		catalog.createTable("test",
 				DescriptorProperties.toJavaMap(connectorDescriptor),
-				DescriptorProperties.toJavaMap(formatDescriptor));
+				DescriptorProperties.toJavaMap(formatDescriptor),
+                DescriptorProperties.toJavaMap(schemaDesc));
 	}
 
 	static void initializeTableSink(OStreamTableCatalog catalog){
@@ -149,10 +152,13 @@ public class StreamingJobCustomCatalog {
 				.properties(kafkaProps)
 				.startFromEarliest();
 		FormatDescriptor formatDescriptor = new Avro().avroSchema(OUTPUT_AVRO_SCHEMA);
+        Schema schemaDesc = new Schema().schema(TableSchema.fromTypeInfo(
+                AvroSchemaConverter.convertToTypeInfo(OUTPUT_AVRO_SCHEMA)));
 		// create and register external table
 		catalog.createTable("output",
 				DescriptorProperties.toJavaMap(connectorDescriptor),
-				DescriptorProperties.toJavaMap(formatDescriptor));
+				DescriptorProperties.toJavaMap(formatDescriptor),
+                DescriptorProperties.toJavaMap(schemaDesc));
 	}
 
 	private static void setupKafkaEnvironment()throws Exception{

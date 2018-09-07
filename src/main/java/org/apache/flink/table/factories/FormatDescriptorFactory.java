@@ -7,5 +7,4 @@ import java.util.Map;
 
 public interface FormatDescriptorFactory extends TableDescriptorFactory {
     FormatDescriptor createFormatDescriptor(Map<String, String> properties);
-    Schema createSchemaDescriptor(Map<String, String> properties);
 }

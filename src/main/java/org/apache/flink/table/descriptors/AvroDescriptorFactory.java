@@ -33,27 +33,6 @@ public class AvroDescriptorFactory implements FormatDescriptorFactory {
     }
 
     @Override
-    public Schema createSchemaDescriptor(Map<String, String> properties) {
-        final DescriptorProperties descriptorProperties = new DescriptorProperties(true);
-        descriptorProperties.putProperties(properties);
-        Schema schema = new Schema();
-        if (descriptorProperties.containsKey(AvroValidator.FORMAT_RECORD_CLASS)) {
-            schema.schema(TableSchema.fromTypeInfo(AvroSchemaConverter.convertToTypeInfo(
-                    descriptorProperties.getClass(
-                            AvroValidator.FORMAT_RECORD_CLASS, SpecificRecord.class)
-            )));
-        } else {
-            schema.schema(TableSchema.fromTypeInfo(AvroSchemaConverter.convertToTypeInfo(
-                    descriptorProperties.getString(
-                            AvroValidator.FORMAT_AVRO_SCHEMA)
-            )));
-        }
-
-        return schema;
-    }
-
-
-    @Override
     public Map<String, String> requiredContext() {
         final Map<String, String> context = new HashMap<>();
         context.put(FormatDescriptorValidator.FORMAT_TYPE(), AvroValidator.FORMAT_TYPE_VALUE);
@@ -76,8 +55,5 @@ public class AvroDescriptorFactory implements FormatDescriptorFactory {
         formatDesc = TableFactoryService.find(FormatDescriptorFactory.class, properties)
                 .createFormatDescriptor(properties);
         System.out.println(formatDesc.toString());
-        Schema schema = TableFactoryService.find(FormatDescriptorFactory.class, properties)
-                .createSchemaDescriptor(properties);
-        System.out.println(schema);
     }
 }
