@@ -8,9 +8,15 @@ import java.util.*;
 import static org.apache.flink.table.descriptors.ConnectorDescriptorValidator.CONNECTOR_PROPERTY_VERSION;
 import static org.apache.flink.table.descriptors.ConnectorDescriptorValidator.CONNECTOR_TYPE;
 import static org.apache.flink.table.descriptors.ConnectorDescriptorValidator.CONNECTOR_VERSION;
+import static org.apache.flink.table.descriptors.FormatDescriptorValidator.FORMAT;
 import static org.apache.flink.table.descriptors.KafkaValidator.*;
 import static org.apache.flink.table.descriptors.KafkaValidator.CONNECTOR_SINK_PARTITIONER;
 import static org.apache.flink.table.descriptors.KafkaValidator.CONNECTOR_SINK_PARTITIONER_CLASS;
+import static org.apache.flink.table.descriptors.RowtimeValidator.*;
+import static org.apache.flink.table.descriptors.RowtimeValidator.ROWTIME_WATERMARKS_DELAY;
+import static org.apache.flink.table.descriptors.SchemaValidator.*;
+import static org.apache.flink.table.descriptors.SchemaValidator.SCHEMA;
+import static org.apache.flink.table.descriptors.SchemaValidator.SCHEMA_PROCTIME;
 import static org.apache.flink.table.descriptors.StreamTableDescriptorValidator.UPDATE_MODE;
 import static org.apache.flink.table.descriptors.StreamTableDescriptorValidator.UPDATE_MODE_VALUE_APPEND;
 
@@ -76,7 +82,8 @@ public class KafkaDescriptorFactory implements ConnectorDescriptorFactory {
                 .properties(kafkaProps);
 
         Map<String,String> properties = DescriptorProperties.toJavaMap(descriptor);
-        descriptor = TableFactoryService.find(ConnectorDescriptorFactory.class, properties).createConnectorDescriptor(properties);
+        descriptor = TableFactoryService.find(ConnectorDescriptorFactory.class, properties)
+                .createConnectorDescriptor(properties);
         System.out.println(descriptor.toString());
 
     }
