@@ -8,7 +8,6 @@ import org.apache.flink.formats.avro.typeutils.AvroSchemaConverter;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.TableSchema;
 import org.apache.flink.table.api.java.StreamTableEnvironment;
@@ -16,17 +15,13 @@ import org.apache.flink.table.descriptors.Csv;
 import org.apache.flink.table.descriptors.Kafka;
 import org.apache.flink.table.descriptors.Schema;
 import org.apache.flink.table.functions.AggregateFunction;
-import org.apache.flink.table.sinks.AppendStreamTableSink;
-import org.apache.flink.table.sinks.CsvTableSink;
-import org.apache.flink.table.sinks.TableSink;
-import org.apache.flink.types.Row;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Properties;
 
 
-public class SqlWindowCollect extends BaseStreamingExample {
+public class SqlUDFWindow extends BaseStreamingExample {
     static List<Tuple3<Integer, String, Integer>> elements = new ArrayList<>();
     static {
         elements.add(new Tuple3<>(1, "yangguo", 30));
@@ -56,7 +51,10 @@ public class SqlWindowCollect extends BaseStreamingExample {
                 .inAppendMode()
                 .registerTableSource("test2");
 
-        Table kafkaTable = tblEnv.sqlQuery("SELECT TUMBLE_END(tt, INTERVAL '1' SECOND), MAX(age) from test2 GROUP BY TUMBLE(tt, INTERVAL '1' SECOND)");
+        tblEnv.registerFunction("wAvg", new WeightedAvg());
+
+
+        Table kafkaTable = tblEnv.sqlQuery("SELECT TUMBLE_END(tt, INTERVAL '1' SECOND), wAvg(age) from test2 GROUP BY TUMBLE(tt, INTERVAL '1' SECOND)");
         kafkaTable.writeToSink(new TestAppendSink(
                 new TableSchema(new String[]{"time", "age"}, new TypeInformation[]{Types.SQL_TIMESTAMP, Types.INT})));
 
@@ -65,5 +63,51 @@ public class SqlWindowCollect extends BaseStreamingExample {
 //                new TableSchema(new String[]{"time", "age"}, new TypeInformation[]{Types.SQL_TIMESTAMP, Types.INT})));
 
         env.execute();
+    }
+
+    public static class AvgAccum {
+        public int sum = 0;
+        public int count = 0;
+    }
+
+    public static class WeightedAvg extends AggregateFunction<Integer, AvgAccum> {
+
+        @Override
+        public AvgAccum createAccumulator() {
+            return new AvgAccum();
+        }
+
+        @Override
+        public Integer getValue(AvgAccum acc) {
+            if (acc.count == 0) {
+                return null;
+            } else {
+                return acc.sum / acc.count;
+            }
+        }
+
+        public void accumulate(AvgAccum acc, int value) {
+            acc.sum += value * 1;
+            acc.count += 1;
+        }
+
+        public void retract(AvgAccum acc, int value) {
+            acc.sum -= value * 1;
+            acc.count -= 1;
+        }
+
+        public void merge(AvgAccum acc, Iterable<AvgAccum> it) {
+            Iterator<AvgAccum> iter = it.iterator();
+            while (iter.hasNext()) {
+                AvgAccum a = iter.next();
+                acc.count += a.count;
+                acc.sum += a.sum;
+            }
+        }
+
+        public void resetAccumulator(AvgAccum acc) {
+            acc.count = 0;
+            acc.sum = 0;
+        }
     }
 }
