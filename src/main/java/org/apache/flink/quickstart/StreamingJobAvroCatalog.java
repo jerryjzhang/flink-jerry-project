@@ -18,14 +18,6 @@
 
 package org.apache.flink.quickstart;
 
-import info.batey.kafka.unit.KafkaUnit;
-import org.apache.avro.io.BinaryEncoder;
-import org.apache.avro.io.DatumWriter;
-import org.apache.avro.io.EncoderFactory;
-import org.apache.avro.specific.SpecificDatumWriter;
-import org.apache.flink.formats.avro.generated.OSInstallRecord;
-import org.apache.flink.formats.avro.generated.SdkLog;
-import org.apache.flink.formats.avro.generated.SdkLogRecord;
 import org.apache.flink.formats.avro.typeutils.AvroSchemaConverter;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.StreamTableEnvironment;
@@ -37,16 +29,8 @@ import org.apache.flink.table.catalog.ExternalCatalogTableBuilder;
 import org.apache.flink.table.catalog.InMemoryExternalCatalog;
 import org.apache.flink.table.descriptors.*;
 import org.apache.flink.table.factories.TableFactoryUtil;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.serialization.BytesSerializer;
-import org.apache.kafka.common.serialization.StringSerializer;
-import org.apache.kafka.common.utils.Bytes;
 
-import java.io.ByteArrayOutputStream;
-import java.util.*;
-
-public class StreamingJobAvroCatalog {
+public class StreamingJobAvroCatalog extends BaseStreamingExample {
 	private static final String AVRO_SCHEMA = "{\n" +
 			"         \"type\": \"record\",\n" +
 			"         \"name\": \"SdkLog\",\n" +
@@ -64,11 +48,6 @@ public class StreamingJobAvroCatalog {
 			"             {\"name\": \"name\", \"type\": [\"null\", \"string\"]},\n" +
 			"             {\"name\": \"age\", \"type\": [\"null\", \"int\"]}]" +
 			"}";
-	private static final String INPUT_TOPIC = "testJerry";
-	private static final String OUTPUT_TOPIC = "outputJerry";
-	private static final String KAFKA_CONN_STR = "localhost:5001";
-	private static final String Zk_CONN_STR = "localhost:5000";
-	private static KafkaUnit kafkaServer = new KafkaUnit(Zk_CONN_STR, KAFKA_CONN_STR);
 
 	public static void main(String[] args) throws Exception {
 		// setup local kafka environment
@@ -93,11 +72,6 @@ public class StreamingJobAvroCatalog {
 	}
 
 	static void insertBySQL(StreamTableEnvironment tblEnv) {
-		// kafka related configs
-		Properties kafkaProps = new Properties();
-		kafkaProps.put("bootstrap.servers", KAFKA_CONN_STR);
-		kafkaProps.put("group.id", "jerryConsumer");
-
 		// Approach 1: Create sink directly and register sink
 //		Kafka011TableSink sink = new Kafka011TableSink(TableSchema.fromTypeInfo(AvroSchemaConverter.convertToTypeInfo(OUTPUT_AVRO_SCHEMA)),
 //				OUTPUT_TOPIC, kafkaProps, Optional.of(new FlinkFixedPartitioner<>()), new AvroRowSerializationSchema(OUTPUT_AVRO_SCHEMA));
@@ -111,11 +85,6 @@ public class StreamingJobAvroCatalog {
 	}
 
 	static void insertByAPI(StreamTableEnvironment tblEnv) {
-		// kafka related configs
-		Properties kafkaProps = new Properties();
-		kafkaProps.put("bootstrap.servers", KAFKA_CONN_STR);
-		kafkaProps.put("group.id", "jerryConsumer");
-
 		// Approach 1: Create sink directly and register sink
 //		Table result = tblEnv.sqlQuery("SELECT id,name,age from dw.test where event['eventTag'] = '10004'");
 //		StreamTableDescriptor descriptor = tblEnv.connect(new Kafka().version("0.11").topic(OUTPUT_TOPIC).properties(kafkaProps).startFromEarliest())
@@ -133,16 +102,10 @@ public class StreamingJobAvroCatalog {
 	}
 
 	static void initializeTableSource(InMemoryExternalCatalog catalog){
-		// kafka related configs
-		Properties kafkaProps = new Properties();
-		kafkaProps.put("bootstrap.servers", KAFKA_CONN_STR);
-		kafkaProps.put("zookeeper.connect", Zk_CONN_STR);
-		kafkaProps.put("group.id", "jerryConsumer");
-
 		// initialize table descriptors
 		ConnectorDescriptor connectorDescriptor = new Kafka()
 				.version("0.11")
-				.topic(INPUT_TOPIC)
+				.topic(AVRO_INPUT_TOPIC)
 				.properties(kafkaProps)
 				.startFromEarliest();
 		FormatDescriptor formatDescriptor = new Avro().avroSchema(AVRO_SCHEMA);
@@ -155,12 +118,6 @@ public class StreamingJobAvroCatalog {
 	}
 
 	static void initializeTableSink(InMemoryExternalCatalog catalog){
-		// kafka related configs
-		Properties kafkaProps = new Properties();
-		kafkaProps.put("bootstrap.servers", KAFKA_CONN_STR);
-		kafkaProps.put("zookeeper.connect", Zk_CONN_STR);
-		kafkaProps.put("group.id", "jerryConsumer");
-
 		// initialize table descriptors
 		ConnectorDescriptor connectorDescriptor = new Kafka()
 				.version("0.11")
@@ -174,53 +131,5 @@ public class StreamingJobAvroCatalog {
 				.withFormat(formatDescriptor).withSchema(schemaDesc).inAppendMode().asTableSink();
 
 		catalog.createTable("output", kafkaTable, true);
-	}
-
-	private static void setupKafkaEnvironment()throws Exception{
-		kafkaServer.startup();
-		kafkaServer.createTopic(INPUT_TOPIC);
-		kafkaServer.createTopic(OUTPUT_TOPIC);
-
-		Properties props = new Properties();
-		props.put("bootstrap.servers", KAFKA_CONN_STR);
-		props.put("key.serializer", StringSerializer.class.getName());
-		props.put("value.serializer", BytesSerializer.class.getName());
-		KafkaProducer producer = new KafkaProducer(props);
-
-		ProducerRecord<String,Bytes> message = new ProducerRecord<>(INPUT_TOPIC, null,
-				Bytes.wrap(generateTestMessage()));
-		producer.send(message);
-	}
-
-	private static byte[] generateTestMessage()throws Exception{
-		Map<CharSequence, CharSequence> event = new HashMap<>();
-		event.put("eventTag", "10004");
-		event.put("eventLog", "info");
-		Map<CharSequence, Integer> intMap = new HashMap<>();
-		intMap.put("id", 1986);
-		List<CharSequence> strs = new ArrayList<>();
-		strs.add("jerryjzhang");
-		Map<CharSequence, SdkLogRecord> recMap = new HashMap<>();
-		SdkLogRecord r = new SdkLogRecord();
-		r.setId(1986);
-		recMap.put("jerry", r);
-		List<OSInstallRecord> recArray = new ArrayList<>();
-		OSInstallRecord or = new OSInstallRecord();
-		or.setName("huni");
-		recArray.add(or);
-		SdkLog record = SdkLog.newBuilder()
-				.setId(1)
-				.setName("jerryjzhang")
-				.setAge(32)
-				.setEvent(event)
-				.build();
-
-		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		BinaryEncoder encoder = EncoderFactory.get().binaryEncoder(out, null);
-		DatumWriter<SdkLog> writer = new SpecificDatumWriter<>(SdkLog.getClassSchema());
-		writer.write(record, encoder);
-		encoder.flush();
-		out.close();
-		return out.toByteArray();
 	}
 }
