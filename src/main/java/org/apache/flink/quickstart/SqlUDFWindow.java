@@ -15,6 +15,7 @@ import org.apache.flink.table.descriptors.Csv;
 import org.apache.flink.table.descriptors.Kafka;
 import org.apache.flink.table.descriptors.Schema;
 import org.apache.flink.table.functions.AggregateFunction;
+import org.apache.flink.table.functions.TableFunction;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -52,9 +53,11 @@ public class SqlUDFWindow extends BaseStreamingExample {
                 .registerTableSource("test2");
 
         tblEnv.registerFunction("wAvg", new WeightedAvg());
+        tblEnv.registerFunction("wDouble", new DoubleOutput());
 
 
-        Table kafkaTable = tblEnv.sqlQuery("SELECT TUMBLE_END(tt, INTERVAL '1' SECOND), wAvg(age) from test2 GROUP BY TUMBLE(tt, INTERVAL '1' SECOND)");
+        Table kafkaTable = tblEnv.sqlQuery("SELECT sTime, tAge FROM (SELECT TUMBLE_END(tt, INTERVAL '1' SECOND) as sTime, wAvg(age) as wAge " +
+                "FROM test2 GROUP BY TUMBLE(tt, INTERVAL '1' SECOND)), LATERAL TABLE(wDouble(wAge)) as T(tAge)");
         kafkaTable.writeToSink(new TestAppendSink(
                 new TableSchema(new String[]{"time", "age"}, new TypeInformation[]{Types.SQL_TIMESTAMP, Types.INT})));
 
@@ -108,6 +111,18 @@ public class SqlUDFWindow extends BaseStreamingExample {
         public void resetAccumulator(AvgAccum acc) {
             acc.count = 0;
             acc.sum = 0;
+        }
+    }
+
+    public static class DoubleOutput extends TableFunction<Integer> {
+        public void eval(int age) {
+            collect(age);
+            collect(age * 2);
+        }
+
+        @Override
+        public TypeInformation<Integer> getResultType() {
+            return Types.INT;
         }
     }
 }
