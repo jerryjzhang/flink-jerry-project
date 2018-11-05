@@ -44,8 +44,8 @@ public class SqlUDF {
         tblEnv.registerFunction("lookup", new LookUp());
         tblEnv.registerFunction("feature", new FeatureExtract());
 
-        Table collectionTable = tblEnv.sqlQuery("SELECT lookup(id, name), fage, feature from test, " +
-                "LATERAL TABLE(feature(age)) as T(fage, feature)");
+        Table collectionTable = tblEnv.sqlQuery("SELECT lookup(fname), fage, feature FROM (SELECT lookup(id, name) as fname, fage, feature from test, " +
+                "LATERAL TABLE(feature(age)) as T(fage, feature))");
         collectionTable.writeToSink(new TestAppendSink(
                 new TableSchema(new String[]{"name", "age", "feature"}, new TypeInformation[]{Types.STRING, Types.INT, Types.STRING})));
 
@@ -55,6 +55,10 @@ public class SqlUDF {
     public static class LookUp extends ScalarFunction {
         public String eval(int id, String name) {
             return id + "-" + name;
+        }
+
+        public String eval(String name) {
+            return "s" + name;
         }
     }
 
