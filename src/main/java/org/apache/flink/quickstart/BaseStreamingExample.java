@@ -1,5 +1,6 @@
 package org.apache.flink.quickstart;
 
+import com.oppo.dc.data.avro.generated.PositionLog;
 import info.batey.kafka.unit.KafkaUnit;
 import org.apache.avro.io.BinaryEncoder;
 import org.apache.avro.io.DatumWriter;
@@ -20,6 +21,7 @@ import java.util.*;
 
 abstract public class BaseStreamingExample {
     protected static final String AVRO_INPUT_TOPIC = "inputAvro";
+    protected static final String POS_INPUT_TOPIC = "inputPosition";
     protected static final String CSV_INPUT_TOPIC = "inputCsv";
     protected static final String OUTPUT_TOPIC = "output";
     protected static final String KAFKA_CONN_STR = "localhost:5001";
@@ -41,11 +43,13 @@ abstract public class BaseStreamingExample {
         kafkaServer.startup();
         kafkaServer.createTopic(AVRO_INPUT_TOPIC);
         kafkaServer.createTopic(CSV_INPUT_TOPIC);
+        kafkaServer.createTopic(POS_INPUT_TOPIC);
         kafkaServer.createTopic(OUTPUT_TOPIC);
 
         KafkaProducer producer = new KafkaProducer(kafkaProps);
         generateCSVMessages(producer);
         generateAvroMessages(producer);
+        generatePosMessages(producer);
     }
 
     protected static void generateCSVMessages(KafkaProducer producer)throws Exception {
@@ -113,5 +117,27 @@ abstract public class BaseStreamingExample {
         ProducerRecord<String,byte[]> message1 = new ProducerRecord<>(AVRO_INPUT_TOPIC, null,
                 out.toByteArray());
         producer.send(message1);
+    }
+
+    protected static void generatePosMessages(KafkaProducer producer)throws Exception {
+        PositionLog log = PositionLog.newBuilder()
+                .setImei("imei")
+                .setSsoid("ssoid")
+                .setLat("40.11")
+                .setLon("-70")
+                .setServerTime(System.currentTimeMillis())
+                .setClientTime(System.currentTimeMillis())
+                .build();
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        BinaryEncoder encoder = EncoderFactory.get().binaryEncoder(out, null);
+        DatumWriter<PositionLog> writer = new SpecificDatumWriter<>(PositionLog.getClassSchema());
+        writer.write(log, encoder);
+        encoder.flush();
+        out.close();
+
+        ProducerRecord<String,byte[]> message = new ProducerRecord<>(POS_INPUT_TOPIC, null,
+                out.toByteArray());
+        producer.send(message);
     }
 }

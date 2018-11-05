@@ -1,0 +1,33 @@
+[{
+    "namespace": "com.oppo.dc.data.avro.generated",
+    "type": "record",
+    "name": "TagRecord",
+    "fields": [{
+        "name": "imei",
+        "type": ["null", "string"]
+    }, {
+        "name": "tagKey",
+        "type": ["null", "string"]
+    }, {
+        "name": "tagValues",
+        "type":{
+          "type": "array",
+          "items": {
+              "name":"TagValue",
+              "type":"record",
+              "fields":[
+                  {
+                      "name": "value",
+                      "type": ["null", "string"]
+                  },{
+                      "name": "weight",
+                      "type": ["null", "string"]
+                  },{
+                      "name": "updateDate",
+                      "type": ["null", "string"]
+                  }
+              ]
+          }
+        }
+    }]
+}]

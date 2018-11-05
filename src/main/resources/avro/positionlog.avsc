@@ -1,0 +1,15 @@
+[
+    {
+         "namespace": "com.oppo.dc.data.avro.generated",
+         "type": "record",
+         "name": "PositionLog",
+         "fields": [
+             {"name": "imei", "type": ["null", "string"]},
+             {"name": "ssoid", "type": ["null", "string"]},
+             {"name": "lon", "type": ["null", "string"]},
+             {"name": "lat", "type": ["null", "string"]},
+             {"name": "client_time", "type": ["null", "long"]},
+             {"name": "server_time", "type": ["null", "long"]}
+         ]
+    }
+]
