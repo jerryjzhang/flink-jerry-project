@@ -10,6 +10,7 @@ import org.apache.flink.formats.avro.generated.SdkLog;
 import org.apache.flink.formats.avro.generated.SdkLogRecord;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.BytesSerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.common.utils.Bytes;
@@ -18,7 +19,7 @@ import java.io.ByteArrayOutputStream;
 import java.util.*;
 
 abstract public class BaseStreamingExample {
-    protected static final String AVRO_INPUT_TOPIC = "iputAvro";
+    protected static final String AVRO_INPUT_TOPIC = "inputAvro";
     protected static final String CSV_INPUT_TOPIC = "inputCsv";
     protected static final String OUTPUT_TOPIC = "output";
     protected static final String KAFKA_CONN_STR = "localhost:5001";
@@ -32,8 +33,8 @@ abstract public class BaseStreamingExample {
         kafkaProps.put("bootstrap.servers", KAFKA_CONN_STR);
         kafkaProps.put("zookeeper.connect", Zk_CONN_STR);
         kafkaProps.put("group.id", "jerryConsumer");
-        kafkaProps.put("key.serializer", StringSerializer.class.getName());
-        kafkaProps.put("value.serializer", BytesSerializer.class.getName());
+        kafkaProps.put("key.serializer", ByteArraySerializer.class.getName());
+        kafkaProps.put("value.serializer", ByteArraySerializer.class.getName());
     }
 
     protected static void setupKafkaEnvironment()throws Exception {
@@ -48,16 +49,16 @@ abstract public class BaseStreamingExample {
     }
 
     protected static void generateCSVMessages(KafkaProducer producer)throws Exception {
-        ProducerRecord<String,Bytes> message = new ProducerRecord<>(CSV_INPUT_TOPIC, null,
-                Bytes.wrap("1\tyangguo\t30\teventTag:10004,eventId:1000".getBytes()));
+        ProducerRecord<String,byte[]> message = new ProducerRecord<>(CSV_INPUT_TOPIC, null,
+                "1\tyangguo\t30\teventTag:10004,eventId:1000".getBytes());
         producer.send(message);
 
-        ProducerRecord<String,Bytes> message1 = new ProducerRecord<>(CSV_INPUT_TOPIC, null,
-                Bytes.wrap("2\tguojing\t50\teventTag:10003,eventId:1001".getBytes()));
+        ProducerRecord<String,byte[]> message1 = new ProducerRecord<>(CSV_INPUT_TOPIC, null,
+                "2\tguojing\t50\teventTag:10003,eventId:1001".getBytes());
         producer.send(message1);
 
-        ProducerRecord<String,Bytes> message2 = new ProducerRecord<>(CSV_INPUT_TOPIC, null,
-                Bytes.wrap("3\thuangrong\t40\teventTag:10003,eventId:1001".getBytes()));
+        ProducerRecord<String,byte[]> message2 = new ProducerRecord<>(CSV_INPUT_TOPIC, null,
+                "3\thuangrong\t40\teventTag:10003,eventId:1001".getBytes());
         producer.send(message2);
     }
 
@@ -91,11 +92,26 @@ abstract public class BaseStreamingExample {
         encoder.flush();
         out.close();
 
-        ProducerRecord<String,Bytes> message = new ProducerRecord<>(AVRO_INPUT_TOPIC, null,
-                Bytes.wrap(out.toByteArray()));
+        ProducerRecord<String,byte[]> message = new ProducerRecord<>(AVRO_INPUT_TOPIC, null,
+                out.toByteArray());
         producer.send(message);
+
+        record = SdkLog.newBuilder()
+                .setId(1)
+                .setName("jinyong")
+                .setAge(94)
+                .setEvent(event)
+                .build();
+
+        out = new ByteArrayOutputStream();
+        encoder = EncoderFactory.get().binaryEncoder(out, null);
+        writer = new SpecificDatumWriter<>(SdkLog.getClassSchema());
+        writer.write(record, encoder);
+        encoder.flush();
+        out.close();
+
+        ProducerRecord<String,byte[]> message1 = new ProducerRecord<>(AVRO_INPUT_TOPIC, null,
+                out.toByteArray());
+        producer.send(message1);
     }
-
-
-
 }
