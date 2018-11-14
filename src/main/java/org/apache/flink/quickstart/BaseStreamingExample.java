@@ -27,7 +27,7 @@ abstract public class BaseStreamingExample {
     protected static final String KAFKA_CONN_STR = "localhost:5001";
     protected static final String Zk_CONN_STR = "localhost:5000";
 
-    private static KafkaUnit kafkaServer = new KafkaUnit(Zk_CONN_STR, KAFKA_CONN_STR);
+    private static KafkaUnit kafkaServer;
 
     // kafka related configs
     protected static Properties kafkaProps = new Properties();
@@ -40,6 +40,7 @@ abstract public class BaseStreamingExample {
     }
 
     protected static void setupKafkaEnvironment()throws Exception {
+        kafkaServer = new KafkaUnit(Zk_CONN_STR, KAFKA_CONN_STR);
         kafkaServer.startup();
         kafkaServer.createTopic(AVRO_INPUT_TOPIC);
         kafkaServer.createTopic(CSV_INPUT_TOPIC);
@@ -101,7 +102,7 @@ abstract public class BaseStreamingExample {
         producer.send(message);
 
         record = SdkLog.newBuilder()
-                .setId(1)
+                .setId(2)
                 .setName("jinyong")
                 .setAge(94)
                 .setEvent(event)
