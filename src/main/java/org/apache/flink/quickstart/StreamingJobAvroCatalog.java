@@ -18,7 +18,9 @@
 
 package org.apache.flink.quickstart;
 
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.formats.avro.typeutils.AvroSchemaConverter;
+import org.apache.flink.streaming.api.environment.LocalStreamEnvironment;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.StreamTableEnvironment;
 import org.apache.flink.table.api.Table;
@@ -53,8 +55,10 @@ public class StreamingJobAvroCatalog extends BaseStreamingExample {
 		// setup local kafka environment
 		setupKafkaEnvironment();
 
-		// set up the streaming execution environment
-		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+		Configuration config = new Configuration();
+		config.setString("metrics.reporter.slf4j.class", "org.apache.flink.metrics.slf4j.Slf4jReporter");
+		config.setString("metrics.reporter.slf4j.interval", "15 SECONDS");
+		final StreamExecutionEnvironment env = new LocalStreamEnvironment(config);
 		final StreamTableEnvironment tblEnv = TableEnvironment.getTableEnvironment(env);
 
 		// initialize and register external table catalog
@@ -68,7 +72,7 @@ public class StreamingJobAvroCatalog extends BaseStreamingExample {
 		insertBySQL(tblEnv);
 		insertByAPI(tblEnv);
 
-		env.execute("Flink Streaming Java API Skeleton");
+		env.execute("jerry");
 	}
 
 	static void insertBySQL(StreamTableEnvironment tblEnv) {
