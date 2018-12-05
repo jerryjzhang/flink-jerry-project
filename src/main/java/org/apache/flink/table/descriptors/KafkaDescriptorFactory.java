@@ -8,17 +8,9 @@ import java.util.*;
 import static org.apache.flink.table.descriptors.ConnectorDescriptorValidator.CONNECTOR_PROPERTY_VERSION;
 import static org.apache.flink.table.descriptors.ConnectorDescriptorValidator.CONNECTOR_TYPE;
 import static org.apache.flink.table.descriptors.ConnectorDescriptorValidator.CONNECTOR_VERSION;
-import static org.apache.flink.table.descriptors.FormatDescriptorValidator.FORMAT;
 import static org.apache.flink.table.descriptors.KafkaValidator.*;
 import static org.apache.flink.table.descriptors.KafkaValidator.CONNECTOR_SINK_PARTITIONER;
 import static org.apache.flink.table.descriptors.KafkaValidator.CONNECTOR_SINK_PARTITIONER_CLASS;
-import static org.apache.flink.table.descriptors.RowtimeValidator.*;
-import static org.apache.flink.table.descriptors.RowtimeValidator.ROWTIME_WATERMARKS_DELAY;
-import static org.apache.flink.table.descriptors.SchemaValidator.*;
-import static org.apache.flink.table.descriptors.SchemaValidator.SCHEMA;
-import static org.apache.flink.table.descriptors.SchemaValidator.SCHEMA_PROCTIME;
-import static org.apache.flink.table.descriptors.StreamTableDescriptorValidator.UPDATE_MODE;
-import static org.apache.flink.table.descriptors.StreamTableDescriptorValidator.UPDATE_MODE_VALUE_APPEND;
 
 public class KafkaDescriptorFactory implements ConnectorDescriptorFactory {
     @Override
@@ -26,7 +18,7 @@ public class KafkaDescriptorFactory implements ConnectorDescriptorFactory {
         final DescriptorProperties descriptorProperties = new DescriptorProperties(true);
         descriptorProperties.putProperties(properties);
         final String topic = descriptorProperties.getString(CONNECTOR_TOPIC);
-        final String version = descriptorProperties.getString(CONNECTOR_VERSION());
+        final String version = descriptorProperties.getString(CONNECTOR_VERSION);
         final Properties kafkaProperties = new Properties();
 
         for(Map<String,String> propertyKey : descriptorProperties.getFixedIndexedProperties(
@@ -49,9 +41,9 @@ public class KafkaDescriptorFactory implements ConnectorDescriptorFactory {
     @Override
     public Map<String, String> requiredContext() {
         Map<String, String> context = new HashMap<>();
-        context.put(CONNECTOR_TYPE(), CONNECTOR_TYPE_VALUE_KAFKA); // kafka
-        context.put(CONNECTOR_VERSION(), "0.10"); // version
-        context.put(CONNECTOR_PROPERTY_VERSION(), "1"); // backwards compatibility
+        context.put(CONNECTOR_TYPE, CONNECTOR_TYPE_VALUE_KAFKA); // kafka
+        context.put(CONNECTOR_VERSION, "0.10"); // version
+        context.put(CONNECTOR_PROPERTY_VERSION, "1"); // backwards compatibility
         return context;
     }
 
@@ -81,7 +73,7 @@ public class KafkaDescriptorFactory implements ConnectorDescriptorFactory {
                 .topic("topic")
                 .properties(kafkaProps);
 
-        Map<String,String> properties = DescriptorProperties.toJavaMap(descriptor);
+        Map<String,String> properties = descriptor.toProperties();
         descriptor = TableFactoryService.find(ConnectorDescriptorFactory.class, properties)
                 .createConnectorDescriptor(properties);
         System.out.println(descriptor.toString());

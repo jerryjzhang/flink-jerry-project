@@ -35,8 +35,8 @@ public class AvroDescriptorFactory implements FormatDescriptorFactory {
     @Override
     public Map<String, String> requiredContext() {
         final Map<String, String> context = new HashMap<>();
-        context.put(FormatDescriptorValidator.FORMAT_TYPE(), AvroValidator.FORMAT_TYPE_VALUE);
-        context.put(FormatDescriptorValidator.FORMAT_PROPERTY_VERSION(), "1");
+        context.put(FormatDescriptorValidator.FORMAT_TYPE, AvroValidator.FORMAT_TYPE_VALUE);
+        context.put(FormatDescriptorValidator.FORMAT_PROPERTY_VERSION, "1");
         return context;
     }
 
@@ -50,7 +50,7 @@ public class AvroDescriptorFactory implements FormatDescriptorFactory {
 
     public static void main(String [] args) {
         FormatDescriptor formatDesc = new Avro().recordClass(SdkLog.class);
-        Map<String, String> properties = DescriptorProperties.toJavaMap(formatDesc);
+        Map<String, String> properties = formatDesc.toProperties();
 
         formatDesc = TableFactoryService.find(FormatDescriptorFactory.class, properties)
                 .createFormatDescriptor(properties);

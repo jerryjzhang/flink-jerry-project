@@ -6,6 +6,7 @@ import org.apache.flink.api.java.io.jdbc.JDBCAppendTableSink;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.formats.avro.generated.SdkLog;
 import org.apache.flink.formats.avro.typeutils.AvroSchemaConverter;
+import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.TableEnvironment;
@@ -31,6 +32,8 @@ public class JdbcSink extends BaseStreamingExample {
         // set up the streaming execution environment
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         final StreamTableEnvironment tblEnv = TableEnvironment.getTableEnvironment(env);
+
+        env.enableCheckpointing(5000, CheckpointingMode.EXACTLY_ONCE);
 
         // collection input
 //        DataStream<Tuple3<Integer, String, Integer>> dataStream = env.fromCollection(elements);

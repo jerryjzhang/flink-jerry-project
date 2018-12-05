@@ -45,7 +45,7 @@ public class OStreamTableCatalog implements ExternalCatalog {
 
         DescriptorProperties properties = new DescriptorProperties(true);
         properties.putProperties(schema_params);
-        Schema schema = new Schema().schema(SchemaValidator.deriveFormatFields(properties));
+        Schema schema = new Schema().schema(SchemaValidator.deriveTableSinkSchema(properties));
 
         return ExternalCatalogTable.builder(connectorDescriptor).inAppendMode()
                     .withSchema(schema)

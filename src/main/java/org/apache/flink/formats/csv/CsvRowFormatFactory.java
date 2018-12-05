@@ -20,8 +20,8 @@ public class CsvRowFormatFactory  implements SerializationSchemaFactory<Row>, De
     @Override
     public Map<String, String> requiredContext() {
         final Map<String, String> context = new HashMap<>();
-        context.put(FormatDescriptorValidator.FORMAT_TYPE(), CsvValidator.FORMAT_TYPE_VALUE());
-        context.put(FormatDescriptorValidator.FORMAT_PROPERTY_VERSION(), "1");
+        context.put(FormatDescriptorValidator.FORMAT_TYPE, CsvValidator.FORMAT_TYPE_VALUE());
+        context.put(FormatDescriptorValidator.FORMAT_PROPERTY_VERSION, "1");
         return context;
     }
 

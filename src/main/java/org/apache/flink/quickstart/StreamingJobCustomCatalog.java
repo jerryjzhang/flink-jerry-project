@@ -94,9 +94,9 @@ public class StreamingJobCustomCatalog extends BaseStreamingExample {
                 AvroSchemaConverter.convertToTypeInfo(AVRO_SCHEMA)));
 		// create and register external table
 		catalog.createTable("test",
-				DescriptorProperties.toJavaMap(connectorDescriptor),
-				DescriptorProperties.toJavaMap(formatDescriptor),
-                DescriptorProperties.toJavaMap(schemaDesc));
+				connectorDescriptor.toProperties(),
+				formatDescriptor.toProperties(),
+				schemaDesc.toProperties());
 	}
 
 	static void initializeTableSink(OStreamTableCatalog catalog) {
@@ -111,8 +111,8 @@ public class StreamingJobCustomCatalog extends BaseStreamingExample {
 				AvroSchemaConverter.convertToTypeInfo(OUTPUT_AVRO_SCHEMA)));
 		// create and register external table
 		catalog.createTable("output",
-				DescriptorProperties.toJavaMap(connectorDescriptor),
-				DescriptorProperties.toJavaMap(formatDescriptor),
-				DescriptorProperties.toJavaMap(schemaDesc));
+				connectorDescriptor.toProperties(),
+				formatDescriptor.toProperties(),
+				schemaDesc.toProperties());
 	}
 }
