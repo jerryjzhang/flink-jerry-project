@@ -1,0 +1,22 @@
+[
+    {
+         "namespace": "com.oppo.dc.data.avro.generated",
+         "type": "record",
+         "name": "UserClick",
+         "fields": [
+             {"name": "imei", "type": ["null", "string"]},
+             {"name": "time", "type": ["null", "long"]},
+             {"name": "source", "type": ["null", "string"]}
+         ]
+    },
+    {
+             "namespace": "com.oppo.dc.data.avro.generated",
+             "type": "record",
+             "name": "UserExpose",
+             "fields": [
+                 {"name": "imei", "type": ["null", "string"]},
+                 {"name": "time", "type": ["null", "long"]},
+                 {"name": "source", "type": ["null", "string"]}
+             ]
+    }
+]

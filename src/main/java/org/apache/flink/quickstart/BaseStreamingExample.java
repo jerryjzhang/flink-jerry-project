@@ -1,6 +1,8 @@
 package org.apache.flink.quickstart;
 
 import com.oppo.dc.data.avro.generated.PositionLog;
+import com.oppo.dc.data.avro.generated.UserClick;
+import com.oppo.dc.data.avro.generated.UserExpose;
 import info.batey.kafka.unit.KafkaUnit;
 import org.apache.avro.io.BinaryEncoder;
 import org.apache.avro.io.DatumWriter;
@@ -17,6 +19,7 @@ import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.common.utils.Bytes;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.*;
 
 abstract public class BaseStreamingExample {
@@ -26,6 +29,9 @@ abstract public class BaseStreamingExample {
     protected static final String OUTPUT_TOPIC = "output";
     protected static final String KAFKA_CONN_STR = "localhost:5001";
     protected static final String Zk_CONN_STR = "localhost:5000";
+
+    protected static final String USER_CLICK_TOPIC = "userClick";
+    protected static final String USER_EXPOSE_TOPIC = "userExpose";
 
     private static KafkaUnit kafkaServer;
 
@@ -46,11 +52,14 @@ abstract public class BaseStreamingExample {
         kafkaServer.createTopic(CSV_INPUT_TOPIC);
         kafkaServer.createTopic(POS_INPUT_TOPIC);
         kafkaServer.createTopic(OUTPUT_TOPIC);
+        kafkaServer.createTopic(USER_EXPOSE_TOPIC);
+        kafkaServer.createTopic(USER_CLICK_TOPIC);
 
         KafkaProducer producer = new KafkaProducer(kafkaProps);
         generateCSVMessages(producer);
         generateAvroMessages(producer);
         generatePosMessages(producer);
+        generateCTRMessages(producer);
     }
 
     protected static void generateCSVMessages(KafkaProducer producer)throws Exception {
@@ -90,16 +99,7 @@ abstract public class BaseStreamingExample {
                 .setEvent(event)
                 .build();
 
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        BinaryEncoder encoder = EncoderFactory.get().binaryEncoder(out, null);
-        DatumWriter<SdkLog> writer = new SpecificDatumWriter<>(SdkLog.getClassSchema());
-        writer.write(record, encoder);
-        encoder.flush();
-        out.close();
-
-        ProducerRecord<String,byte[]> message = new ProducerRecord<>(AVRO_INPUT_TOPIC, null,
-                out.toByteArray());
-        producer.send(message);
+        sendAvroMessagesInternal(producer, AVRO_INPUT_TOPIC, record, SdkLog.getClassSchema());
 
         record = SdkLog.newBuilder()
                 .setId(2)
@@ -107,17 +107,7 @@ abstract public class BaseStreamingExample {
                 .setAge(94)
                 .setEvent(event)
                 .build();
-
-        out = new ByteArrayOutputStream();
-        encoder = EncoderFactory.get().binaryEncoder(out, null);
-        writer = new SpecificDatumWriter<>(SdkLog.getClassSchema());
-        writer.write(record, encoder);
-        encoder.flush();
-        out.close();
-
-        ProducerRecord<String,byte[]> message1 = new ProducerRecord<>(AVRO_INPUT_TOPIC, null,
-                out.toByteArray());
-        producer.send(message1);
+        sendAvroMessagesInternal(producer, AVRO_INPUT_TOPIC, record, SdkLog.getClassSchema());
     }
 
     protected static void generatePosMessages(KafkaProducer producer)throws Exception {
@@ -130,14 +120,42 @@ abstract public class BaseStreamingExample {
                 .setClientTime(System.currentTimeMillis())
                 .build();
 
+        sendAvroMessagesInternal(producer, POS_INPUT_TOPIC, log, PositionLog.getClassSchema());
+    }
+
+    protected static void generateCTRMessages(KafkaProducer producer)throws Exception {
+        UserExpose expose = UserExpose.newBuilder()
+                .setImei("imei1")
+                .setSource("source1")
+                .setTime(System.currentTimeMillis())
+                .build();
+        sendAvroMessagesInternal(producer, USER_EXPOSE_TOPIC, expose, UserExpose.getClassSchema());
+
+        expose = UserExpose.newBuilder()
+                .setImei("imei1")
+                .setSource("source1")
+                .setTime(System.currentTimeMillis())
+                .build();
+        sendAvroMessagesInternal(producer, USER_EXPOSE_TOPIC, expose, UserExpose.getClassSchema());
+
+        UserClick click = UserClick.newBuilder()
+                .setImei("imei1")
+                .setSource("source1")
+                .setTime(System.currentTimeMillis())
+                .build();
+        sendAvroMessagesInternal(producer, USER_CLICK_TOPIC, click, UserClick.getClassSchema());
+    }
+
+    private static void sendAvroMessagesInternal(KafkaProducer producer, String topic,
+                                             Object data, org.apache.avro.Schema schema) throws IOException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         BinaryEncoder encoder = EncoderFactory.get().binaryEncoder(out, null);
-        DatumWriter<PositionLog> writer = new SpecificDatumWriter<>(PositionLog.getClassSchema());
-        writer.write(log, encoder);
+        DatumWriter writer = new SpecificDatumWriter<>(schema);
+        writer.write(data, encoder);
         encoder.flush();
         out.close();
 
-        ProducerRecord<String,byte[]> message = new ProducerRecord<>(POS_INPUT_TOPIC, null,
+        ProducerRecord<String,byte[]> message = new ProducerRecord<>(topic, null,
                 out.toByteArray());
         producer.send(message);
     }

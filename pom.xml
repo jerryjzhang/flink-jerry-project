@@ -93,12 +93,6 @@ under the License.
 			<version>${flink.version}</version>
 			<scope>provided</scope>
 		</dependency>
-		<dependency>
-			<groupId>org.apache.flink</groupId>
-			<artifactId>flink-fs-hadoop-shaded</artifactId>
-            <version>${flink.version}</version>
-			<scope>provided</scope>
-		</dependency>
 
 		<!-- Add connector dependencies here. They must be in the default scope (compile). -->
 		<dependency>
