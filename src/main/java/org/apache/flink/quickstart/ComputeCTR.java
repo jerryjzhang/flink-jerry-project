@@ -4,6 +4,7 @@ import com.oppo.dc.data.avro.generated.UserClick;
 import com.oppo.dc.data.avro.generated.UserExpose;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
+import org.apache.flink.formats.avro.typeutils.AvroSchemaConverter;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.Table;
@@ -25,24 +26,24 @@ public class ComputeCTR extends BaseStreamingExample {
 
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
-        Schema schemaDesc = new Schema()
-                .field("imei", Types.STRING)
-                .field("tt", Types.SQL_TIMESTAMP)
-                    .rowtime(new Rowtime().timestampsFromField("time").watermarksPeriodicAscending())
-                .field("source", Types.STRING);
-
         // kafka input
         tblEnv.connect(new Kafka().version("0.10")
                 .topic(USER_EXPOSE_TOPIC).properties(kafkaProps).startFromEarliest())
                 .withFormat(new Avro().recordClass(UserExpose.class))
-                .withSchema(schemaDesc)
+                .withSchema(new Schema().schema(TableSchema.fromTypeInfo(
+                        AvroSchemaConverter.convertToTypeInfo(UserExpose.class)))
+                        .field("tt", Types.SQL_TIMESTAMP)
+                        .rowtime(new Rowtime().timestampsFromField("time").watermarksPeriodicAscending()))
                 .inAppendMode()
                 .registerTableSource("expose");
 
         tblEnv.connect(new Kafka().version("0.10")
                 .topic(USER_CLICK_TOPIC).properties(kafkaProps).startFromEarliest())
                 .withFormat(new Avro().recordClass(UserClick.class))
-                .withSchema(schemaDesc)
+                .withSchema(new Schema().schema(TableSchema.fromTypeInfo(
+                        AvroSchemaConverter.convertToTypeInfo(UserClick.class)))
+                        .field("tt", Types.SQL_TIMESTAMP)
+                            .rowtime(new Rowtime().timestampsFromField("time").watermarksPeriodicAscending()))
                 .inAppendMode()
                 .registerTableSource("click");
 
