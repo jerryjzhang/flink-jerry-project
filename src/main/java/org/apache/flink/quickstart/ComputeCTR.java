@@ -58,6 +58,8 @@ public class ComputeCTR extends BaseStreamingExample {
                 new TypeInformation[]{Types.STRING, Types.SQL_TIMESTAMP, Types.DOUBLE});
         result.writeToSink(new TestUpsertSink(schema));
         // execute program
+        System.out.println(env.getExecutionPlan());
+
         env.execute("Flink Streaming Java API Skeleton");
     }
 }

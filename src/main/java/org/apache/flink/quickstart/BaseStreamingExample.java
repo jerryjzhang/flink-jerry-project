@@ -14,13 +14,13 @@ import org.apache.flink.formats.avro.generated.SdkLogRecord;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
-import org.apache.kafka.common.serialization.BytesSerializer;
-import org.apache.kafka.common.serialization.StringSerializer;
-import org.apache.kafka.common.utils.Bytes;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 abstract public class BaseStreamingExample {
     protected static final String AVRO_INPUT_TOPIC = "inputAvro";
@@ -34,6 +34,8 @@ abstract public class BaseStreamingExample {
     protected static final String USER_EXPOSE_TOPIC = "userExpose";
 
     private static KafkaUnit kafkaServer;
+
+    private static ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     // kafka related configs
     protected static Properties kafkaProps = new Properties();
@@ -59,7 +61,9 @@ abstract public class BaseStreamingExample {
         generateCSVMessages(producer);
         generateAvroMessages(producer);
         generatePosMessages(producer);
-        generateCTRMessages(producer);
+
+        ProduceMessageThread thread = new ProduceMessageThread(producer);
+        scheduler.scheduleWithFixedDelay(thread, 0, 5, TimeUnit.SECONDS);
     }
 
     protected static void generateCSVMessages(KafkaProducer producer)throws Exception {
@@ -158,5 +162,22 @@ abstract public class BaseStreamingExample {
         ProducerRecord<String,byte[]> message = new ProducerRecord<>(topic, null,
                 out.toByteArray());
         producer.send(message);
+    }
+
+    static class ProduceMessageThread implements Runnable {
+        private KafkaProducer producer;
+
+        public ProduceMessageThread(KafkaProducer producer) {
+            this.producer = producer;
+        }
+
+        @Override
+        public void run() {
+            try {
+                generateCTRMessages(producer);
+            } catch (Exception e) {
+
+            }
+        }
     }
 }
