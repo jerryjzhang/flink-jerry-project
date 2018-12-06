@@ -79,7 +79,7 @@ public class StreamingJobCustomCatalog extends BaseStreamingExample {
 		// Approach 2: Get sink from ExternalCatalog and register sink
 		Table result = tblEnv.sqlQuery("SELECT id,name,age from dw.test where event['eventTag'] = '10004'");
 		ExternalCatalogTable table = tblEnv.getRegisteredExternalCatalog("dw").getTable("output");
-		result.writeToSink(TableFactoryUtil.findAndCreateTableSink(tblEnv, table));
+		result.insertInto("dw.output");
 	}
 
 	static void initializeTableSource(OStreamTableCatalog catalog){
