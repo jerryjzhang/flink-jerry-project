@@ -61,6 +61,12 @@ public class ComputeCTR extends BaseStreamingExample {
         // execute program
         System.out.println(env.getExecutionPlan());
 
+//        // test count(distinct imei)
+//        Table result = tblEnv.sqlQuery("SELECT source, TUMBLE_END(tt, INTERVAL '1' SECOND), count(distinct imei) FROM expose GROUP BY source, TUMBLE(tt, INTERVAL '1' SECOND)");
+//        TableSchema schema = new TableSchema(new String[]{"source", "time", "count"},
+//                new TypeInformation[]{Types.STRING, Types.SQL_TIMESTAMP, Types.LONG});
+//        result.writeToSink(new TestAppendSink(schema));
+
         env.execute("Flink Streaming Java API Skeleton");
     }
 }
