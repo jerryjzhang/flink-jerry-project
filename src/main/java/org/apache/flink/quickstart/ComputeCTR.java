@@ -51,13 +51,13 @@ public class ComputeCTR extends BaseStreamingExample {
         Table result = tblEnv.sqlQuery("SELECT exposeCount.source, exposeCount.sTime, clickCount.sCount / exposeCount.sCount\n" +
                 "FROM\n" +
                 "(SELECT source, TUMBLE_END(tt, INTERVAL '1' SECOND) as sTime, CAST(count(1) AS DOUBLE) as sCount FROM expose GROUP BY source, TUMBLE(tt, INTERVAL '1' SECOND)) AS exposeCount \n" +
-                "LEFT JOIN\n" +
+                "INNER JOIN\n" +
                 "(SELECT source, TUMBLE_END(tt, INTERVAL '1' SECOND) as sTime, CAST(count(1) AS DOUBLE) as sCount FROM click  GROUP BY source, TUMBLE(tt, INTERVAL '1' SECOND)) AS clickCount\n" +
                 "ON\n" +
                 "exposeCount.source = clickCount.source AND exposeCount.sTime = clickCount.sTime");
         TableSchema schema = new TableSchema(new String[]{"source", "time", "count"},
                 new TypeInformation[]{Types.STRING, Types.SQL_TIMESTAMP, Types.DOUBLE});
-        result.writeToSink(new TestUpsertSink(schema));
+        result.writeToSink(new TestAppendSink(schema));
         // execute program
         System.out.println(env.getExecutionPlan());
 
