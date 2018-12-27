@@ -43,6 +43,7 @@ abstract public class BaseStreamingExample {
         kafkaProps.put("bootstrap.servers", KAFKA_CONN_STR);
         kafkaProps.put("zookeeper.connect", Zk_CONN_STR);
         kafkaProps.put("group.id", "jerryConsumer");
+        kafkaProps.put("auto.offset.reset", "earliest");
         kafkaProps.put("key.serializer", ByteArraySerializer.class.getName());
         kafkaProps.put("value.serializer", ByteArraySerializer.class.getName());
     }
