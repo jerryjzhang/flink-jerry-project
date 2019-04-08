@@ -44,8 +44,12 @@ public class SqlUDF {
         tblEnv.registerFunction("lookup", new LookUp());
         tblEnv.registerFunction("feature", new FeatureExtract());
 
+        // cross join UDF
         Table collectionTable = tblEnv.sqlQuery("SELECT lookup(fname), fage, feature FROM (SELECT lookup(id, name) as fname, fage, feature from test, " +
                 "LATERAL TABLE(feature(age)) as T(fage, feature))");
+        // left join UDF
+        //Table collectionTable = tblEnv.sqlQuery("SELECT lookup(fname), fage, feature FROM (SELECT lookup(id, name) as fname, fage, feature from test LEFT JOIN " +
+        //        "LATERAL TABLE(feature(age)) as T(fage, feature) ON TRUE)");
         collectionTable.writeToSink(new TestAppendSink(
                 new TableSchema(new String[]{"name", "age", "feature"}, new TypeInformation[]{Types.STRING, Types.INT, Types.STRING})));
 
@@ -64,8 +68,10 @@ public class SqlUDF {
 
     public static class FeatureExtract extends TableFunction<Tuple2<Integer, String>> {
         public void eval(int age) {
-            collect(new Tuple2<>(age, "feature1"));
-            collect(new Tuple2<>(age, "feature2"));
+            if(age >= 50) {
+                collect(new Tuple2<>(age, "feature1"));
+                collect(new Tuple2<>(age, "feature2"));
+            }
         }
 
         @Override
