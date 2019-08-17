@@ -37,8 +37,8 @@ public class SingleSourceMultipleSink extends BaseStreamingExample{
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         final StreamTableEnvironment tblEnv = TableEnvironment.getTableEnvironment(env);
 
-        dataStreamAPI(env, tblEnv);
-        //tableAPI(env, tblEnv);
+        //dataStreamAPI(env, tblEnv);
+        tableAPI(env, tblEnv);
     }
 
     private static void dataStreamAPI(StreamExecutionEnvironment env, StreamTableEnvironment tblEnv) {
@@ -87,13 +87,13 @@ public class SingleSourceMultipleSink extends BaseStreamingExample{
                 .registerTableSource("test");
 
         // actual sql query
-        TableSchema schema = new TableSchema(new String[]{"id","name", "age"},
-                new TypeInformation[]{org.apache.flink.api.common.typeinfo.Types.INT, Types.STRING, Types.INT});
+        TableSchema schema = new TableSchema(new String[]{"id","name", "age", "event"},
+                new TypeInformation[]{org.apache.flink.api.common.typeinfo.Types.INT, Types.STRING, Types.INT, Types.MAP(Types.STRING, Types.STRING)});
         tblEnv.registerTableSink("output1", new TestAppendSink(schema));
         tblEnv.registerTableSink("output2", new TestAppendSink(schema));
 
-        tblEnv.sqlUpdate("INSERT INTO output1 SELECT id,name,age from test where id = 1");
-        tblEnv.sqlUpdate("INSERT INTO output2 SELECT id,name,age from test where id = 2");
+        tblEnv.sqlUpdate("INSERT INTO output1 SELECT * from test where id = 1");
+        tblEnv.sqlUpdate("INSERT INTO output2 SELECT * from test where id = 2");
 
         StreamGraph streamGraph = env.getStreamGraph();
         convert(streamGraph);
