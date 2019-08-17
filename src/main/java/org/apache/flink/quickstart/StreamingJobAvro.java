@@ -47,14 +47,17 @@ public class StreamingJobAvro extends BaseStreamingExample {
 				.inAppendMode()
 				.registerTableSource("test");
 
-		tblEnv.registerFunction("doubleFunc", new DoubleInt());
-
-		// actual sql query
-		Table result = tblEnv.sqlQuery("SELECT id,name,doubleFunc(age) from test where event['eventTag'] = '10004' ");
 		TableSchema schema = new TableSchema(new String[]{"id", "name", "age"},
 				new TypeInformation[]{org.apache.flink.api.common.typeinfo.Types.INT,
 						org.apache.flink.api.common.typeinfo.Types.STRING, Types.INT});
-		result.writeToSink(new TestAppendSink(schema));
+		
+		tblEnv.registerFunction("doubleFunc", new DoubleInt());
+		tblEnv.registerTableSink("outputA", new TestAppendSink(schema));
+
+		// actual sql query
+		Table result = tblEnv.sqlQuery("SELECT id,name,doubleFunc(age) from test where event['eventTag'] = '10004' ");
+		result.insertInto("outputA");
+		//tblEnv.sqlUpdate("INSERT INTO outputA SELECT id,name,doubleFunc(age) from test where event['eventTag'] = '10004'");
 		// execute program
 		env.execute("Flink Streaming Java API Skeleton");
 	}
