@@ -32,12 +32,12 @@ public class TestAppendSink implements AppendStreamTableSink<Row> {
 
     @Override
     public String[] getFieldNames() {
-        return new String[0];
+        return schema.getFieldNames();
     }
 
     @Override
     public TypeInformation<?>[] getFieldTypes() {
-        return new TypeInformation[0];
+        return schema.getFieldTypes();
     }
 
     @Override
