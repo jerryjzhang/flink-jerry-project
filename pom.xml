@@ -45,7 +45,7 @@ under the License.
 			<name>Apache Development Snapshot Repository</name>
 			<url>https://repository.apache.org/content/repositories/snapshots/</url>
 			<releases>
-				<enabled>false</enabled>
+				<enabled>true</enabled>
 			</releases>
 			<snapshots>
 				<enabled>false</enabled>
@@ -372,7 +372,7 @@ under the License.
 				</dependency>
 				<dependency>
 					<groupId>org.apache.flink</groupId>
-					<artifactId>flink-table_${scala.binary.version}</artifactId>
+					<artifactId>flink-table-planner_${scala.binary.version}</artifactId>
 					<version>${flink.version}</version>
 					<scope>compile</scope>
 				</dependency>
