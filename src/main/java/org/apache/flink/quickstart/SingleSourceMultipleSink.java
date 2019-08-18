@@ -95,38 +95,48 @@ public class SingleSourceMultipleSink extends BaseStreamingExample{
         tblEnv.sqlUpdate("INSERT INTO output2 SELECT * from test where id = 2");
 
         StreamGraph streamGraph = env.getStreamGraph();
-        convert(streamGraph);
+        mergeSingleSource(streamGraph);
         JobGraph jobGraph = streamGraph.getJobGraph();
         System.out.println(streamGraph.getStreamingPlanAsJSON());
     }
 
-    public static void convert(StreamGraph streamGraph) {
-        StreamNode source = streamGraph.getStreamNode(1);
+    public static void mergeSingleSource(StreamGraph streamGraph) {
+        // assume the single source must be the first stream node
+        StreamNode singleSource = streamGraph.getStreamNode(1);
         List<StreamNode> otherSources = new ArrayList<>();
         for(StreamNode node : streamGraph.getStreamNodes()) {
-            if(node.getId() > 1 && node.getOperator() instanceof  StreamSource) {
+            // find out duplicate sources
+            if(node.getId() != singleSource.getId() && node.getOperator() instanceof  StreamSource) {
                 otherSources.add(node);
                 continue;
             }
+
             List<StreamEdge> edges = node.getInEdges();
             StreamEdge newEdge = null;
             for(StreamEdge edge : edges) {
-                if(streamGraph.getStreamNode(edge.getSourceId()).getOperator() instanceof StreamSource){
-                    newEdge = new StreamEdge(source, node, edge.getTypeNumber(),
+                // check if a stream node has a source parent
+                if(edge.getSourceId() != singleSource.getId() &&
+                        streamGraph.getStreamNode(edge.getSourceId()).getOperator() instanceof StreamSource){
+                    // instantiate a new inbound stream edge pointing to the single source
+                    newEdge = new StreamEdge(singleSource, node, edge.getTypeNumber(),
                             edge.getSelectedNames(), edge.getPartitioner(), edge.getOutputTag());
                 }
             }
             if(newEdge != null) {
                 edges.clear();
                 edges.add(newEdge);
+                // instantiate a new outbound stream edge pointing to the single source
+                StreamEdge outEdge = new StreamEdge(singleSource, node, newEdge.getTypeNumber(),
+                        newEdge.getSelectedNames(), newEdge.getPartitioner(), newEdge.getOutputTag());
+                singleSource.addOutEdge(outEdge);
             }
         }
 
+        // remove all duplicate sources
         for(StreamNode node : otherSources){
             streamGraph.getStreamNodes().remove(node);
         }
-
         streamGraph.getSourceIDs().clear();
-        streamGraph.getSourceIDs().add(1);
+        streamGraph.getSourceIDs().add(singleSource.getId());
     }
 }
