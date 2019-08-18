@@ -116,7 +116,9 @@ public class SingleSourceMultipleSink extends BaseStreamingExample{
             for(StreamEdge edge : edges) {
                 // check if a stream node has a source parent
                 if(edge.getSourceId() != singleSource.getId() &&
-                        streamGraph.getStreamNode(edge.getSourceId()).getOperator() instanceof StreamSource){
+                        streamGraph.getStreamNode(edge.getSourceId()).getOperator() instanceof StreamSource &&
+                        streamGraph.getStreamNode(edge.getSourceId()).getOperatorName().
+                            equals(singleSource.getOperatorName())) {
                     // instantiate a new inbound stream edge pointing to the single source
                     newEdge = new StreamEdge(singleSource, node, edge.getTypeNumber(),
                             edge.getSelectedNames(), edge.getPartitioner(), edge.getOutputTag());
