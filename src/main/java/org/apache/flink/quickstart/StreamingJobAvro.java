@@ -55,6 +55,7 @@ public class StreamingJobAvro extends BaseStreamingExample {
 				new TypeInformation[]{org.apache.flink.api.common.typeinfo.Types.INT,
 						org.apache.flink.api.common.typeinfo.Types.STRING, Types.INT});
 		result.writeToSink(new TestAppendSink(schema));
+		result.writeToSink(new TestAppendSink(schema));
 		// execute program
 		env.execute("Flink Streaming Java API Skeleton");
 	}

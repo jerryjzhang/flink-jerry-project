@@ -107,7 +107,7 @@ abstract public class BaseStreamingExample {
         sendAvroMessagesInternal(producer, AVRO_INPUT_TOPIC, record, SdkLog.getClassSchema());
 
         record = SdkLog.newBuilder()
-                .setId(2)
+                .setId(1)
                 .setName("jinyong")
                 .setAge(94)
                 .setEvent(event)

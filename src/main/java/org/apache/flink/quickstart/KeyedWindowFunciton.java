@@ -1,5 +1,6 @@
 package org.apache.flink.quickstart;
 
+import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple3;
@@ -44,40 +45,27 @@ public class KeyedWindowFunciton extends BaseStreamingExample {
         DataStream<SdkLog> stream = env.addSource(new FlinkKafkaConsumer011<>(AVRO_INPUT_TOPIC,
                 AvroDeserializationSchema.forSpecific(SdkLog.class), kafkaProps).setStartFromEarliest());
 
-        DataStream resultStream = stream
-              .keyBy(new KeySelector<SdkLog, Integer>(){
-                    @Override
-                    public Integer getKey(SdkLog value) throws Exception {
-                        return value.getId();
-                    }
-              })
-              .window(TumblingProcessingTimeWindows.of(Time.seconds(1)))
-              .reduce(new ReduceFunction<SdkLog>() {
-                  @Override
-                  public SdkLog reduce(SdkLog value1, SdkLog value2) throws Exception {
-                      return value2;
-                  }
-              }, new ProcessWindowFunction<SdkLog, SdkLog, Integer, TimeWindow>() {
-                  @Override
-                  public void process(Integer key, Context context, Iterable<SdkLog> elements, Collector<SdkLog> out) throws Exception {
-                      SdkLog sdkLog = elements.iterator().next();
-                      out.collect(sdkLog);
-                      out.collect(sdkLog);
-                  }
-              });
+        DataStream sdk_feeds = stream.filter(new FilterFunction<SdkLog>(){
+            @Override
+            public boolean filter(SdkLog value) throws Exception {
+                return false;
+            }
+        });
 
-        resultStream
-                .addSink(new SinkFunction() {
-                  @Override
-                  public void invoke(Object value, Context context) throws Exception {
-                      System.err.println("DataStream: " + value);
-                  }
-              });
+        DataStream sdk_cdo = stream.filter(new FilterFunction<SdkLog>(){
+            @Override
+            public boolean filter(SdkLog value) throws Exception {
+                return false;
+            }
+        });
 
-        resultStream
+        sdk_feeds
+                .addSink(new FlinkKafkaProducer011(OUTPUT_TOPIC, new MyAvroSerializationSchema(), kafkaProps));
+        sdk_cdo
                 .addSink(new FlinkKafkaProducer011(OUTPUT_TOPIC, new MyAvroSerializationSchema(), kafkaProps));
 
-        env.execute();
+
+        System.out.println(env.getExecutionPlan());
     }
 
     static class MyAvroSerializationSchema implements KeyedSerializationSchema<SdkLog> {
