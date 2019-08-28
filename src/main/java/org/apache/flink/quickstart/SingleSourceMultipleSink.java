@@ -8,7 +8,9 @@ import org.apache.flink.formats.avro.generated.SdkLog;
 import org.apache.flink.formats.avro.typeutils.AvroSchemaConverter;
 import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.ProcessFunction;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.streaming.api.graph.StreamEdge;
 import org.apache.flink.streaming.api.graph.StreamGraph;
@@ -21,6 +23,8 @@ import org.apache.flink.table.api.java.StreamTableEnvironment;
 import org.apache.flink.table.descriptors.Avro;
 import org.apache.flink.table.descriptors.Kafka;
 import org.apache.flink.table.descriptors.Schema;
+import org.apache.flink.util.Collector;
+import org.apache.flink.util.OutputTag;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +34,8 @@ import java.util.List;
  * Created by jerryjzhang on 19/8/17.
  */
 public class SingleSourceMultipleSink extends BaseStreamingExample{
+    private static final OutputTag<SdkLog> filterTag = new OutputTag<SdkLog>("filterTag") {};
+
     public static void main(String [] args) throws Exception {
         // setup local kafka environment
         setupKafkaEnvironment();
@@ -39,7 +45,8 @@ public class SingleSourceMultipleSink extends BaseStreamingExample{
         final StreamTableEnvironment tblEnv = TableEnvironment.getTableEnvironment(env);
 
         //dataStreamAPI(env, tblEnv);
-        tableAPI(env, tblEnv);
+        //tableAPI(env, tblEnv);
+        sideOutputAPI(env, tblEnv);
         env.execute();
     }
 
@@ -71,6 +78,41 @@ public class SingleSourceMultipleSink extends BaseStreamingExample{
             @Override
             public void invoke(Object value, Context context) throws Exception {
                 System.err.println("DataStream: " + value);
+            }
+        });
+
+        StreamGraph streamGraph = env.getStreamGraph();
+        JobGraph jobGraph = streamGraph.getJobGraph();
+        System.out.println(streamGraph.getStreamingPlanAsJSON());
+    }
+
+    private static void sideOutputAPI(StreamExecutionEnvironment env, StreamTableEnvironment tblEnv) {
+        DataStream<SdkLog> stream = env.addSource(new FlinkKafkaConsumer011<>(AVRO_INPUT_TOPIC,
+                AvroDeserializationSchema.forSpecific(SdkLog.class), kafkaProps).setStartFromEarliest());
+
+        SingleOutputStreamOperator result = stream.process(new ProcessFunction<SdkLog, Object>() {
+            @Override
+            public void processElement(SdkLog value, Context ctx, Collector<Object> out) throws Exception {
+                if(value.getAge() < 80) {
+                    out.collect(value);
+                } else {
+                    ctx.output(filterTag, value);
+                }
+            }
+        });
+
+        result.addSink(new SinkFunction() {
+            @Override
+            public void invoke(Object value, Context context) throws Exception {
+                System.err.println("DataStream: " + value);
+            }
+        });
+
+        DataStream sideOutput = result.getSideOutput(filterTag);
+        sideOutput.addSink(new SinkFunction() {
+            @Override
+            public void invoke(Object value, Context context) throws Exception {
+                System.err.println("SideOutput: " + value);
             }
         });
 
