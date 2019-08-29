@@ -45,8 +45,8 @@ public class SingleSourceMultipleSink extends BaseStreamingExample{
         final StreamTableEnvironment tblEnv = TableEnvironment.getTableEnvironment(env);
 
         //dataStreamAPI(env, tblEnv);
-        //tableAPI(env, tblEnv);
-        sideOutputAPI(env, tblEnv);
+        tableAPI(env, tblEnv);
+        //sideOutputAPI(env, tblEnv);
         env.execute();
     }
 
@@ -137,12 +137,52 @@ public class SingleSourceMultipleSink extends BaseStreamingExample{
         tblEnv.registerTableSink("output2", new TestAppendSink(schema));
 
         tblEnv.sqlUpdate("INSERT INTO output1 SELECT * from test where id = 1");
-        tblEnv.sqlUpdate("INSERT INTO output2 SELECT * from test where id = 2");
+        tblEnv.sqlUpdate("INSERT INTO output2 SELECT * from test where id = 1");
 
         StreamGraph streamGraph = env.getStreamGraph();
-        mergeSingleSource(streamGraph);
+//        mergeSingleSource(streamGraph);
+//        mergeSingleProcessing(streamGraph);
         JobGraph jobGraph = streamGraph.getJobGraph();
         System.out.println(streamGraph.getStreamingPlanAsJSON());
+    }
+
+    static void removeStreamNode(StreamGraph streamGraph, StreamNode parent, StreamNode child) {
+        if (parent.getOperator() instanceof StreamSource) {
+            // remove out edge pointing to specified child
+            StreamEdge edgeToBeDeleted = null;
+            for (StreamEdge edge : parent.getOutEdges()) {
+                if (edge.getTargetVertex() == child) {
+                    edgeToBeDeleted = edge;
+                    break;
+                }
+            }
+            parent.getOutEdges().remove(edgeToBeDeleted);
+            return;
+        }
+
+        // remove all upstream parent except for stream source
+        for(StreamEdge inEdges : parent.getInEdges()) {
+            removeStreamNode(streamGraph, inEdges.getSourceVertex(), parent);
+        }
+
+        streamGraph.getStreamNodes().remove(parent);
+    }
+
+    static void mergeSingleProcessing(StreamGraph streamGraph) {
+        StreamNode firstSink = streamGraph.getStreamNode(5);
+        StreamNode secondSink = streamGraph.getStreamNode(10);
+
+        for(StreamEdge edge : secondSink.getInEdges()) {
+            removeStreamNode(streamGraph, edge.getSourceVertex(), secondSink);
+        }
+
+        secondSink.getInEdges().clear();
+        for(StreamEdge edge : firstSink.getInEdges()) {
+            StreamEdge newEdge = new StreamEdge(edge.getSourceVertex(), secondSink, edge.getTypeNumber(),
+                    edge.getSelectedNames(), edge.getPartitioner(), edge.getOutputTag());
+            secondSink.addInEdge(newEdge);
+            edge.getSourceVertex().addOutEdge(newEdge);
+        }
     }
 
     static void mergeSingleSource(StreamGraph streamGraph) {
