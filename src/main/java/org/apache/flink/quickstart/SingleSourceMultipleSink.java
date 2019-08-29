@@ -146,8 +146,17 @@ public class SingleSourceMultipleSink extends BaseStreamingExample{
     }
 
     static void mergeSingleSource(StreamGraph streamGraph) {
-        // assume the single source must be the first stream node
-        StreamNode singleSource = streamGraph.getStreamNode(1);
+        // assume the single source must be the first stream source
+        StreamNode singleSource = null;
+        for(StreamNode node : streamGraph.getStreamNodes()) {
+            if(node.getOperator() instanceof StreamSource) {
+                singleSource = node;
+                break;
+            }
+        }
+
+        assert singleSource != null;
+
         List<StreamNode> duplicateSources = new ArrayList<>();
         for(StreamNode node : streamGraph.getStreamNodes()) {
             // find out duplicate sources
