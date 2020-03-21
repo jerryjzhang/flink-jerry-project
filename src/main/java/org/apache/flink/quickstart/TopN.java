@@ -23,7 +23,7 @@ public class TopN {
                 new Order(4L, "beer", 3)));
 
         // register DataStream as Table
-        tEnv.registerDataStream("OrderB", orderB, "user, product, amount, ts");
+        tEnv.createTemporaryView("OrderB", orderB, "user, product, amount, ts");
 
         // union the two tables
         Table result = tEnv.sqlQuery("" +

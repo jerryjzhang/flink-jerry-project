@@ -17,6 +17,7 @@ public class WindowEventTime {
     public static void main(String [] args) throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         EnvironmentSettings settings = EnvironmentSettings.newInstance()
+                .useBlinkPlanner()
                 .inStreamingMode()
                 .build();
         StreamTableEnvironment tEnv = StreamTableEnvironment.create(env, settings);
@@ -37,14 +38,23 @@ public class WindowEventTime {
         });
 
         // register DataStream as Table
-        tEnv.registerDataStream("OrderB", orderB, "user, product, amount, ts1.rowtime");
+        tEnv.createTemporaryView("OrderB", orderB, "user, product, amount, ts1.rowtime");
 
         Table result = tEnv.sqlQuery("" +
-                "SELECT TUMBLE_START(ts1, INTERVAL '5' MINUTE) as wStart, SUM(amount)" +
+                "SELECT TUMBLE_START(ts1, INTERVAL '5' MINUTE) as window_start, SUM(amount) as total_amount" +
                 "   FROM OrderB" +
                 "   GROUP BY TUMBLE(ts1, INTERVAL '5' MINUTE)");
 
-        tEnv.toRetractStream(result, Row.class).print();
+        tEnv.toAppendStream(result, Row.class).print();
+
+        result.printSchema();
+        tEnv.createTemporaryView("OrderStat", result);
+        Table result1 = tEnv.sqlQuery("" +
+                "SELECT window_start, total_amount FROM ("+
+                "       SELECT *, ROW_NUMBER() OVER (ORDER BY total_amount DESC) as row_num" +
+                "       FROM OrderStat)" +
+                "WHERE row_num<=1");
+        tEnv.toRetractStream(result1, Row.class).print();
 
         env.execute();
     }
