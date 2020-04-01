@@ -13,7 +13,7 @@ import org.apache.flink.types.Row;
 import java.sql.Timestamp;
 import java.util.Arrays;
 
-public class WindowEventTime {
+public class WindowTopN {
     public static void main(String [] args) throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         EnvironmentSettings settings = EnvironmentSettings.newInstance()
