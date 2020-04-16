@@ -2,52 +2,69 @@ package org.apache.flink.quickstart;
 
 import org.apache.flink.api.common.functions.AggregateFunction;
 import org.apache.flink.api.java.functions.KeySelector;
-import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.timestamps.BoundedOutOfOrdernessTimestampExtractor;
 import org.apache.flink.streaming.api.functions.windowing.ProcessWindowFunction;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
+import org.apache.flink.streaming.api.windowing.evictors.CountEvictor;
+import org.apache.flink.streaming.api.windowing.evictors.TimeEvictor;
 import org.apache.flink.streaming.api.windowing.time.Time;
+import org.apache.flink.streaming.api.windowing.triggers.ContinuousEventTimeTrigger;
 import org.apache.flink.streaming.api.windowing.triggers.CountTrigger;
+import org.apache.flink.streaming.api.windowing.triggers.EventTimeTrigger;
+import org.apache.flink.streaming.api.windowing.triggers.PurgingTrigger;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.util.Collector;
+import org.apache.flink.util.MyTimeWindow;
 
 import java.sql.Timestamp;
 import java.util.Arrays;
+
+import static org.apache.flink.util.Utils.getTime;
 
 public class WindowDemo {
     public static void main(String [] args) throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
-        long now = System.currentTimeMillis();
-        DataStream<Order> orderB = env.fromCollection(Arrays.asList(
-                new Order(1L, "pen", 1, new Timestamp(now)),
-                new Order(1L, "rubber", 2, new Timestamp(now + 1*60*1000)),
-                new Order(1L, "beer", 3, new Timestamp(now + 5*60*1000)),
-                new Order(1L, "jesse", 4, new Timestamp(now + 6*60*1000))));
+        DataStream<Order> orders = env.fromCollection(Arrays.asList(
+                new Order(1L, "pen", 1,    getTime("2020-04-15 20:00")),
+                new Order(1L, "rubber", 2, getTime("2020-04-15 20:01")),
 
-        // step1: extract event-time
-        orderB = orderB.assignTimestampsAndWatermarks(new BoundedOutOfOrdernessTimestampExtractor<Order>(Time.seconds(5)) {
-            @Override
-            public long extractTimestamp(Order element) {
-                return element.ts.getTime();
-            }
-        });
+                new Order(1L, "beer", 1,   getTime("2020-04-15 20:05")),
+                new Order(1L, "ball", 3,   getTime("2020-04-15 20:06")),
 
+                new Order(2L, "pen", 3,    getTime("2020-04-15 20:00")),
+                new Order(2L, "rubber", 1, getTime("2020-04-15 20:01")),
 
-        DataStream<Tuple2<TimeWindow, Integer>> sum = orderB
-                .keyBy(new KeySelector<Order, Long>(){
-                    public Long getKey(Order value) throws Exception {
+                new Order(2L, "beer", 2,   getTime("2020-04-15 20:05")),
+                new Order(2L, "ball", 1,   getTime("2020-04-15 20:06"))));
+
+        DataStream<Tuple3<Long, MyTimeWindow, Integer>> result = orders
+                .assignTimestampsAndWatermarks(new BoundedOutOfOrdernessTimestampExtractor<Order>(Time.seconds(5)) {
+                    public long extractTimestamp(Order element) {
+                        return element.ts.getTime();
+                     }})
+                .keyBy(new KeySelector<Order, Long>() {
+                    public Long getKey(Order value) {
                         return value.user;
                     }})
                 .window(TumblingEventTimeWindows.of(Time.minutes(5)))
-                .trigger(CountTrigger.of(1))
+
+                .trigger(EventTimeTrigger.create())
+                //.trigger(CountTrigger.of(1))
+                //.trigger(ContinuousEventTimeTrigger.of(Time.minutes(2)))
+                //.trigger(PurgingTrigger.of(CountTrigger.of(1)))
+
+                //.evictor(CountEvictor.of(1))
+                //.evictor(TimeEvictor.of(Time.minutes(1)))
+
                 .aggregate(new MyAggregateFunction(), new MyProcessWindowFunction());
 
-        sum.printToErr();
+        result.printToErr();
 
         env.execute();
     }
@@ -75,10 +92,10 @@ public class WindowDemo {
     }
 
     private static class MyProcessWindowFunction
-            extends ProcessWindowFunction<Integer, Tuple2<TimeWindow, Integer>, Long, TimeWindow> {
+            extends ProcessWindowFunction<Integer, Tuple3<Long, MyTimeWindow, Integer>, Long, TimeWindow> {
         @Override
-        public void process(Long aLong, Context context, java.lang.Iterable<Integer> elements, Collector<Tuple2<TimeWindow, Integer>> out) throws Exception {
-            out.collect(new Tuple2<>(context.window() ,elements.iterator().next()));
+        public void process(Long userId, Context context, java.lang.Iterable<Integer> elements, Collector<Tuple3<Long, MyTimeWindow, Integer>> out) throws Exception {
+            out.collect(new Tuple3<>(userId, new MyTimeWindow(context.window()) ,elements.iterator().next()));
         }
     }
 }
