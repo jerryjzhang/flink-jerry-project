@@ -48,10 +48,7 @@ public class WindowDemo {
                     public long extractTimestamp(Order element) {
                         return element.ts.getTime();
                      }})
-                .keyBy(new KeySelector<Order, Long>() {
-                    public Long getKey(Order value) {
-                        return value.user;
-                    }})
+                .keyBy(value -> value.user)
                 .window(TumblingEventTimeWindows.of(Time.minutes(5)))
 
                 .trigger(EventTimeTrigger.create())
