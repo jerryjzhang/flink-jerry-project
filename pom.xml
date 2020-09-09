@@ -30,7 +30,7 @@ under the License.
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<flink.version>1.10.0</flink.version>
+		<flink.version>1.11.1</flink.version>
 		<java.version>1.8</java.version>
 		<scala.binary.version>2.11</scala.binary.version>
 		<maven.compiler.source>${java.version}</maven.compiler.source>
@@ -61,17 +61,17 @@ under the License.
 
 		<dependency>
 			<groupId>org.apache.flink</groupId>
+			<artifactId>flink-clients_${scala.binary.version}</artifactId>
+			<version>${flink.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-core</artifactId>
 			<version>${flink.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-table-api-java-bridge_${scala.binary.version}</artifactId>
-			<version>${flink.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.flink</groupId>
-			<artifactId>flink-table-api-scala-bridge_${scala.binary.version}</artifactId>
 			<version>${flink.version}</version>
 		</dependency>
 		<dependency>
@@ -85,47 +85,11 @@ under the License.
 			<version>${flink.version}</version>
 		</dependency>
 
-		<dependency>
-			<groupId>org.apache.flink</groupId>
-			<artifactId>flink-streaming-scala_${scala.binary.version}</artifactId>
-			<version>${flink.version}</version>
-		</dependency>
-
 		<!-- Add connector dependencies here. They must be in the default scope (compile). -->
-		<dependency>
-			<groupId>org.apache.flink</groupId>
-			<artifactId>flink-connector-kafka-0.11_${scala.binary.version}</artifactId>
-			<version>${flink.version}</version>
-			<scope>compile</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.flink</groupId>
-			<artifactId>flink-connector-kafka-base_${scala.binary.version}</artifactId>
-			<version>${flink.version}</version>
-			<scope>compile</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.flink</groupId>
-			<artifactId>flink-json</artifactId>
-			<version>${flink.version}</version>
-			<scope>compile</scope>
-		</dependency>
 		<dependency>
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-avro</artifactId>
 			<version>${flink.version}</version>
-			<scope>compile</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.flink</groupId>
-			<artifactId>flink-hbase_${scala.binary.version}</artifactId>
-			<version>${flink.version}</version>
-			<scope>compile</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.flink</groupId>
-			<artifactId>flink-jdbc</artifactId>
-			<version>1.6.2</version>
 			<scope>compile</scope>
 		</dependency>
 
@@ -144,45 +108,9 @@ under the License.
 			<scope>runtime</scope>
 		</dependency>
 		<dependency>
-			<groupId>info.batey.kafka</groupId>
-			<artifactId>kafka-unit</artifactId>
-			<version>1.0</version>
-			<exclusions>
-				<exclusion>
-					<groupId>commons-io</groupId>
-					<artifactId>commons-io</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>net.sf.jopt-simple</groupId>
-			<artifactId>jopt-simple</artifactId>
-			<version>5.0.4</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.kafka</groupId>
-			<artifactId>kafka_2.11</artifactId>
-			<version>0.11.0.2</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.kafka</groupId>
-			<artifactId>kafka-clients</artifactId>
-			<version>0.11.0.2</version>
-		</dependency>
-		<dependency>
-			<groupId>commons-codec</groupId>
-			<artifactId>commons-codec</artifactId>
-			<version>1.10</version>
-		</dependency>
-		<dependency>
-			<groupId>com.google.collections</groupId>
-			<artifactId>google-collections</artifactId>
-			<version>0.9</version>
-		</dependency>
-		<dependency>
-			<groupId>mysql</groupId>
-			<artifactId>mysql-connector-java</artifactId>
-			<version>5.1.47</version>
+			<groupId>com.alibaba.ververica</groupId>
+			<artifactId>flink-connector-mysql-cdc</artifactId>
+			<version>1.1.0-SNAPSHOT</version>
 		</dependency>
 	</dependencies>
 
@@ -211,7 +139,7 @@ under the License.
 				<configuration>
 					<archive>
 						<manifest>
-							<mainClass>org.apache.flink.quickstart.StreamingJobRomInstall</mainClass>
+							<mainClass>org.apache.flink.quickstart.WindowDemo</mainClass>
 						</manifest>
 					</archive>
 				</configuration>
@@ -290,7 +218,7 @@ under the License.
 							</filters>
 							<transformers>
 								<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-									<mainClass>org.apache.flink.quickstart.StreamingJobRomInstall</mainClass>
+									<mainClass>org.apache.flink.quickstart.WindowDemo</mainClass>
 								</transformer>
 							</transformers>
 						</configuration>
@@ -339,12 +267,6 @@ under the License.
 			<dependencies>
 				<dependency>
 					<groupId>org.apache.flink</groupId>
-					<artifactId>flink-scala_${scala.binary.version}</artifactId>
-					<version>${flink.version}</version>
-					<scope>compile</scope>
-				</dependency>
-				<dependency>
-					<groupId>org.apache.flink</groupId>
 					<artifactId>flink-java</artifactId>
 					<version>${flink.version}</version>
 					<scope>compile</scope>
@@ -352,12 +274,6 @@ under the License.
 				<dependency>
 					<groupId>org.apache.flink</groupId>
 					<artifactId>flink-streaming-java_${scala.binary.version}</artifactId>
-					<version>${flink.version}</version>
-					<scope>compile</scope>
-				</dependency>
-				<dependency>
-					<groupId>org.apache.flink</groupId>
-					<artifactId>flink-streaming-scala_${scala.binary.version}</artifactId>
 					<version>${flink.version}</version>
 					<scope>compile</scope>
 				</dependency>
@@ -379,23 +295,6 @@ under the License.
 					<version>${flink.version}</version>
 					<scope>compile</scope>
 				</dependency>
-				<dependency>
-					<groupId>org.apache.hbase</groupId>
-					<artifactId>hbase-server</artifactId>
-					<version>${hbase.version}</version>
-					<exclusions>
-						<exclusion>
-							<groupId>com.google.guava</groupId>
-							<artifactId>guava</artifactId>
-						</exclusion>
-					</exclusions>
-				</dependency>
-				<!--<dependency>-->
-					<!--<groupId>org.apache.hbase</groupId>-->
-					<!--<artifactId>hbase-testing-util</artifactId>-->
-					<!--<version>2.0.0</version>-->
-					<!--<scope>compile</scope>-->
-				<!--</dependency>-->
 			</dependencies>
 		</profile>
 	</profiles>
