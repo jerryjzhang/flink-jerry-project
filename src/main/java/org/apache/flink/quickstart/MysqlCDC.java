@@ -35,9 +35,22 @@ public class MysqlCDC {
                 " 'connector' = 'print'" +
                 ")";
 
+        String sinkEsDDL = "CREATE TABLE product_es (\n" +
+                "name STRING,\n" +
+                "weight DECIMAL(10,3),\n" +
+                "PRIMARY KEY(name) NOT ENFORCED\n" +
+                ") WITH (\n" +
+                "  'connector' = 'elasticsearch-7',\n" +
+                "  'hosts' = 'http://localhost:9200',\n" +
+                "  'index' = 'jerry_product'\n" +
+                ")";
+
         tEnv.executeSql(sourceDDL);
         tEnv.executeSql(sinkDDL);
+        tEnv.executeSql(sinkEsDDL);
 
+        tEnv.executeSql("INSERT INTO product_es SELECT name, weight FROM " +
+                "product_source");
         tEnv.executeSql("INSERT INTO product_sink SELECT name, weight FROM " +
                 "product_source");
 
