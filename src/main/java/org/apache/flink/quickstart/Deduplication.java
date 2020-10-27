@@ -27,7 +27,7 @@ public class Deduplication {
 
         // union the two tables
         Table result = tEnv.sqlQuery("" +
-                "SELECT user,product,amount,ts FROM (" +
+                "SELECT amount,product,ts,user FROM (" +
                 "   SELECT *, ROW_NUMBER() OVER (PARTITION BY user,product ORDER BY proctime ASC) as row_num" +
                 "   FROM OrderB)" +
                 "WHERE row_num = 1");

@@ -27,12 +27,13 @@ public class TopN {
 
         // union the two tables
         Table result = tEnv.sqlQuery("" +
-                "SELECT user,product,amount,ts FROM (" +
-                "   SELECT *, ROW_NUMBER() OVER (ORDER BY amount DESC) as row_num" +
+                "SELECT amount,product,ts,user  FROM (" +
+                "   SELECT *, ROW_NUMBER() OVER (PARTITION BY user " +
+                "ORDER BY amount DESC) as row_num" +
                 "   FROM OrderB)" +
                 "WHERE row_num<=1");
 
-        tEnv.toRetractStream(result, Order.class).print();
+        tEnv.toRetractStream(result, Order.class).printToErr();
 
         env.execute();
     }
