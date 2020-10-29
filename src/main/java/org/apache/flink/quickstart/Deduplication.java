@@ -26,7 +26,7 @@ public class Deduplication {
                 new Order(2L, "pen", 1,
                         new Timestamp(sdf.parse("2020-10-23").getTime())),
                 new Order(2L, "pen", 2,
-                        new Timestamp(sdf.parse("2020-10-23").getTime())),
+                        new Timestamp(sdf.parse("2020-10-23").getTime()+3600)),
                 new Order(2L, "pen", 4,
                         new Timestamp(sdf.parse("2020-10-24").getTime())),
                 new Order(4L, "beer", 3)));
