@@ -27,6 +27,10 @@ public class Deduplication {
                         new Timestamp(sdf.parse("2020-10-23").getTime())),
                 new Order(2L, "pen", 2,
                         new Timestamp(sdf.parse("2020-10-23").getTime()+3600)),
+                new Order(2L, "pen", 2,
+                        new Timestamp(sdf.parse("2020-10-23").getTime()+7200)),
+                new Order(2L, "pen", 2,
+                        new Timestamp(sdf.parse("2020-10-23").getTime()+2400)),
                 new Order(2L, "pen", 4,
                         new Timestamp(sdf.parse("2020-10-24").getTime())),
                 new Order(4L, "beer", 3)));
@@ -40,9 +44,9 @@ public class Deduplication {
                 "   SELECT *, ROW_NUMBER() OVER (PARTITION BY user,product,DATE_FORMAT(ts, 'yyMMdd') " +
                 "ORDER BY proctime ASC) as row_num" +
                 "   FROM OrderB)" +
-                "WHERE row_num = 1");
+                "WHERE row_num <= 3");
 
-        tEnv.toAppendStream(result, Order.class).printToErr();
+        tEnv.toRetractStream(result, Order.class).printToErr();
 
         env.execute();
     }
