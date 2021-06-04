@@ -68,7 +68,7 @@ public class MysqlCDC {
         tEnv.executeSql(sinkEsDDL);
         tEnv.executeSql(sinkMysqlDDL);
 
-        tEnv.executeSql("INSERT INTO product_es SELECT name, weight FROM " +
+        tEnv.executeSql("INSERT INTO product_es SELECT id, name, weight FROM " +
                 "product_source");
         tEnv.executeSql("INSERT INTO product_sink SELECT id, name, weight FROM " +
                 "product_source");
