@@ -15,7 +15,8 @@ public class MysqlCDC {
                         " id INT NOT NULL," +
                         " name STRING," +
                         " description STRING," +
-                        " weight DECIMAL(10,3)" +
+                        " weight DECIMAL(10,3)," +
+                        " PRIMARY KEY (id) NOT ENFORCED" +
                         ") WITH (" +
                         " 'connector' = 'mysql-cdc'," +
                         " 'hostname' = '%s'," +
