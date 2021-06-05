@@ -114,6 +114,12 @@ under the License.
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
+			<groupId>com.alibaba.ververica</groupId>
+			<artifactId>flink-connector-postgres-cdc</artifactId>
+			<version>1.4.0</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-connector-jdbc_${scala.binary.version}</artifactId>
 			<version>${flink.version}</version>

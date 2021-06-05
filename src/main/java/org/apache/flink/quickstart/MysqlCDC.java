@@ -49,7 +49,7 @@ public class MysqlCDC {
                 ")";
 
         String sinkMysqlDDL = String.format(
-                "CREATE TABLE product_sink_db (" +
+                "CREATE TABLE product_sink_mysql (" +
                         " id INT NOT NULL," +
                         " name STRING," +
                         " description STRING," +
@@ -64,16 +64,35 @@ public class MysqlCDC {
                         ")",
                 "jdbc:mysql://localhost:3306/jerry", "jerryjzhang", "tme", "products_sink");
 
+        String sinkPostgresDDL = String.format(
+                "CREATE TABLE product_sink_postgres (" +
+                        " id INT NOT NULL," +
+                        " name STRING," +
+                        " description STRING," +
+                        " weight DECIMAL(10,3)," +
+                        " PRIMARY KEY(id) NOT ENFORCED\n" +
+                        ") WITH (" +
+                        " 'connector' = 'jdbc'," +
+                        " 'url' = '%s'," +
+                        " 'username' = '%s'," +
+                        " 'password' = '%s'," +
+                        " 'table-name' = '%s'" +
+                        ")",
+                "jdbc:postgresql://localhost:5432/postgres", "postgres", "tme", "products");
+
         tEnv.executeSql(sourceDDL);
         tEnv.executeSql(sinkDDL);
         tEnv.executeSql(sinkEsDDL);
         tEnv.executeSql(sinkMysqlDDL);
+        tEnv.executeSql(sinkPostgresDDL);
 
         tEnv.executeSql("INSERT INTO product_es SELECT id, name, weight FROM " +
                 "product_source");
         tEnv.executeSql("INSERT INTO product_sink SELECT id, name, weight FROM " +
                 "product_source");
-        tEnv.executeSql("INSERT INTO product_sink_db SELECT * FROM " +
+        tEnv.executeSql("INSERT INTO product_sink_mysql SELECT * FROM " +
+                "product_source");
+        tEnv.executeSql("INSERT INTO product_sink_postgres SELECT * FROM " +
                 "product_source");
     }
 }
