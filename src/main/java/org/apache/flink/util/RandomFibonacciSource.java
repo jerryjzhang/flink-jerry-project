@@ -30,11 +30,13 @@ public class RandomFibonacciSource implements SourceFunction<Tuple3<Integer, Int
 
     @Override
     public void run(SourceContext<Tuple3<Integer, Integer, Timestamp>> ctx) throws Exception {
-        while (isRunning && counter < BOUND) {
+        long epoch = 1 * 1000;
+        while (isRunning) {
+
             int first = rnd.nextInt(9) + 101;
             int second = rnd.nextInt(BOUND / 2 - 1) + 1;
 
-            long time = (sdf.parse("2021-06-05 15:00:00.000").getTime());
+            long time = (sdf.parse("2021-06-05 15:00:00.000").getTime()) + counter * epoch;
             ctx.collect(new Tuple3<>(first, second, new Timestamp(time)));
             counter++;
             Thread.sleep(500L);
