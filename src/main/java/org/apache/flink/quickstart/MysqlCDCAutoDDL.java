@@ -25,6 +25,12 @@ public class MysqlCDCAutoDDL {
     static String source_db_password = "tme";
     static String source_jdbc_url = String.format("jdbc:mysql://%s:%s", source_db_host, source_db_port);
 
+    static String sink_db_host = "localhost";
+    static String sink_db_port = "3306";
+    static String sink_db_username = "jerryjzhang";
+    static String sink_db_password = "tme";
+    static String sink_jdbc_url = String.format("jdbc:mysql://%s:%s", sink_db_host, sink_db_port);
+
     static String getMysqlCdcDDL(String host, String port, String user,
                                  String password, String database, String table, String columnDef) {
         return String.format("CREATE TABLE %s(\n" +
@@ -59,7 +65,7 @@ public class MysqlCDCAutoDDL {
                     " 'password' = '%s',\n" +
                     " 'table-name' = '%s'\n" +
                     ")",
-                table + "_sink", columnDef, jdbcUrl, user, password, table);
+                table, columnDef, jdbcUrl, user, password, table);
     }
 
     static void registerSourceTable(StreamTableEnvironment tEnv, String database, String table) throws Exception {
@@ -89,55 +95,41 @@ public class MysqlCDCAutoDDL {
 
         String columnDef = sb.toString();
         String sourceDDL = getMysqlCdcDDL(source_db_host,source_db_port,source_db_username, source_db_password, database,table, columnDef);
-        String sinkDDL = getJdbcDDL(source_db_host,source_db_port,source_db_username, source_db_password, database,table, columnDef);
         System.out.println(sourceDDL);
 
         tEnv.executeSql(sourceDDL);
+    }
+
+    static void registerSinkTable(StreamTableEnvironment tEnv, String database, String table, String keyCol) throws Exception {
+        Class.forName("com.mysql.jdbc.Driver");
+        Connection con = DriverManager.getConnection(
+                sink_jdbc_url, sink_db_username, sink_db_password);
+        Statement stmt = con.createStatement();
+
+        ResultSet res = stmt.executeQuery(String.format("select * from %s.%s where 1<0", database, table));
+        ResultSetMetaData rsmd = res.getMetaData();
+        StringBuilder sb = new StringBuilder();
+        for(int i = 1; i <= rsmd.getColumnCount(); i++) {
+            sb.append(rsmd.getColumnName(i) + " " + typeMap.get(rsmd.getColumnTypeName(i)));
+            sb.append(",\n");
+        }
+        String pkeyDef = String.format("PRIMARY KEY (%s) NOT ENFORCED", keyCol);
+        sb.append(pkeyDef);
+
+        String columnDef = sb.toString();
+        String sinkDDL = getJdbcDDL(sink_db_host,sink_db_port,sink_db_username, sink_db_password, database,table, columnDef);
+        System.out.println(sinkDDL);
+
         tEnv.executeSql(sinkDDL);
     }
 
     public static void main(String [] args) throws Exception {
-        Class.forName("com.mysql.jdbc.Driver");
-        Connection con = DriverManager.getConnection(
-                "jdbc:mysql://localhost:3306/jerry","jerryjzhang","tme");
-        Statement stmt = con.createStatement();
-
-        ResultSet res = stmt.executeQuery("select * from products where 1<0");
-        ResultSetMetaData rsmd = res.getMetaData();
-        rsmd.getColumnType(1);
-        rsmd.getColumnLabel(1);
-        rsmd.getColumnDisplaySize(1);
-        StringBuilder sb = new StringBuilder();
-        for(int i = 1; i <= rsmd.getColumnCount(); i++) {
-            sb.append(rsmd.getColumnName(i) + " " + typeMap.get(rsmd.getColumnTypeName(i)));
-            if (i < rsmd.getColumnCount()) {
-                sb.append(",");
-            }
-            sb.append("\n");
-        }
-
-        DatabaseMetaData dm = con.getMetaData( );
-        ResultSet rs = dm.getExportedKeys( null , null , "products" );
-        if (rs.next()) {
-            String pkey = rs.getString("PKCOLUMN_NAME");
-            String pkeyDef = String.format(",PRIMARY KEY (%s) NOT ENFORCED", pkey);
-            sb.append(pkeyDef);
-        }
-
-        String columnDef = sb.toString();
-        String sourceDDL = getMysqlCdcDDL("localhost","3306","jerryjzhang", "tme", "jerry","products", columnDef);
-        String sinkDDL = getPrintDDL("products_print", columnDef);
-        String jdbcDDL = getJdbcDDL("localhost","3306","jerryjzhang", "tme", "jerry","products_sink", columnDef);
-        System.out.println(jdbcDDL);
-
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         StreamTableEnvironment tEnv = StreamTableEnvironment.create(env,
                 EnvironmentSettings.newInstance().useBlinkPlanner().inStreamingMode().build());
 
-        tEnv.executeSql(sourceDDL);
-        tEnv.executeSql(sinkDDL);
-        tEnv.executeSql(jdbcDDL);
-        tEnv.executeSql("INSERT INTO products_print SELECT * FROM products");
-        tEnv.executeSql("INSERT INTO products_sink_sink SELECT * FROM products");
+        registerSourceTable(tEnv, "jerry", "products");
+        registerSinkTable(tEnv, "jerry", "products_sink", "id");
+        tEnv.executeSql("INSERT INTO products_sink SELECT * FROM products");
     }
 }
