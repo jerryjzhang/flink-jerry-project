@@ -43,7 +43,7 @@ public class MysqlCDCAutoDDL {
                 " 'database-name' = '%s',\n" +
                 " 'table-name' = '%s',\n" +
                 " 'debezium.database.serverTimezone' = 'UTC'\n" +
-                ")", table, columnDef, host, port, user, password, database, table);
+                ")", database+"."+table, columnDef, host, port, user, password, database, table);
     }
 
     static String getPrintDDL(String table, String columnDef) {
@@ -65,7 +65,7 @@ public class MysqlCDCAutoDDL {
                     " 'password' = '%s',\n" +
                     " 'table-name' = '%s'\n" +
                     ")",
-                table, columnDef, jdbcUrl, user, password, table);
+                database+"."+table, columnDef, jdbcUrl, user, password, table);
     }
 
     static void registerSourceTable(StreamTableEnvironment tEnv, String database, String table) throws Exception {
@@ -85,18 +85,19 @@ public class MysqlCDCAutoDDL {
             sb.append("\n");
         }
 
-        DatabaseMetaData dm = con.getMetaData( );
-        ResultSet rs = dm.getExportedKeys( null , database , table);
-        if (rs.next()) {
-            String pkey = rs.getString("PKCOLUMN_NAME");
-            String pkeyDef = String.format(",PRIMARY KEY (%s) NOT ENFORCED", pkey);
-            sb.append(pkeyDef);
-        }
+//        DatabaseMetaData dm = con.getMetaData( );
+//        ResultSet rs = dm.getExportedKeys( null , database , table);
+//        if (rs.next()) {
+//            String pkey = rs.getString("PKCOLUMN_NAME");
+//            String pkeyDef = String.format(",PRIMARY KEY (%s) NOT ENFORCED", pkey);
+//            sb.append(pkeyDef);
+//        }
 
         String columnDef = sb.toString();
         String sourceDDL = getMysqlCdcDDL(source_db_host,source_db_port,source_db_username, source_db_password, database,table, columnDef);
         System.out.println(sourceDDL);
 
+        tEnv.executeSql("create database if not exists " + database);
         tEnv.executeSql(sourceDDL);
     }
 
@@ -120,6 +121,7 @@ public class MysqlCDCAutoDDL {
         String sinkDDL = getJdbcDDL(sink_db_host,sink_db_port,sink_db_username, sink_db_password, database,table, columnDef);
         System.out.println(sinkDDL);
 
+        tEnv.executeSql("create database if not exists " + database);
         tEnv.executeSql(sinkDDL);
     }
 
@@ -129,7 +131,7 @@ public class MysqlCDCAutoDDL {
                 EnvironmentSettings.newInstance().useBlinkPlanner().inStreamingMode().build());
 
         registerSourceTable(tEnv, "jerry", "products");
-        registerSinkTable(tEnv, "jerry", "products_sink", "id");
-        tEnv.executeSql("INSERT INTO products_sink SELECT * FROM products");
+        registerSinkTable(tEnv, "jessie", "products", "id");
+        tEnv.executeSql("INSERT INTO jessie.products SELECT * FROM jerry.products");
     }
 }
