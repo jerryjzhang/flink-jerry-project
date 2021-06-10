@@ -24,11 +24,13 @@ public class MysqlCDC {
                         " 'username' = '%s'," +
                         " 'password' = '%s'," +
                         " 'database-name' = '%s'," +
-                        " 'table-name' = '%s'" +
+                        " 'table-name' = '%s'," +
+                        " 'debezium.database.characterEncoding' = 'utf8'," +
+                        " 'debezium.database.useUnicode' = 'true'" +
                         ")",
                 "localhost", 3306, "jerryjzhang", "tme", "jerry", "products");
 
-        String sinkDDL = "CREATE TABLE product_sink (" +
+        String sinkDDL = "CREATE TABLE product_print (" +
                 " id INT," +
                 " name STRING," +
                 " weight DECIMAL(10,3)," +
@@ -88,7 +90,7 @@ public class MysqlCDC {
 
         tEnv.executeSql("INSERT INTO product_es SELECT id, name, weight FROM " +
                 "product_source");
-        tEnv.executeSql("INSERT INTO product_sink SELECT id, name, weight FROM " +
+        tEnv.executeSql("INSERT INTO product_print SELECT id, description, weight FROM " +
                 "product_source");
         tEnv.executeSql("INSERT INTO product_sink_mysql SELECT * FROM " +
                 "product_source");
