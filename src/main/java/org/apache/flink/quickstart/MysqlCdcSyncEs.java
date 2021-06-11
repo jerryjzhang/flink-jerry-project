@@ -5,6 +5,7 @@ import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.environment.CheckpointConfig;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.EnvironmentSettings;
+import org.apache.flink.table.api.StatementSet;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.util.MysqlDDLBuilder;
 
@@ -51,9 +52,12 @@ public class MysqlCdcSyncEs {
         tEnv.executeSql(sinkEs2DDL);
         tEnv.executeSql(sinkEsDDL);
 
-        tEnv.executeSql("INSERT INTO product_es SELECT id, name FROM " +
+        StatementSet set = tEnv.createStatementSet();
+        set.addInsertSql("INSERT INTO product_es SELECT id, name FROM " +
                 "jerry.products");
-        tEnv.executeSql("INSERT INTO product_es2 SELECT id, weight FROM " +
-                "jerry.products_sink");
+        set.addInsertSql("INSERT INTO product_es2 SELECT id, weight FROM " +
+                "jerry.products");
+        System.out.println(set.explain());
+        set.execute();
     }
 }
