@@ -1,4 +1,4 @@
-package org.apache.flink.quickstart;
+package org.apache.flink.util;
 
 import java.sql.Timestamp;
 
