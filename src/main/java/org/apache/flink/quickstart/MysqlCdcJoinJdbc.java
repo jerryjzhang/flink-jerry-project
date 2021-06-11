@@ -18,8 +18,10 @@ public class MysqlCdcJoinJdbc {
 
         MysqlTableDDLBuilder tableFactory = new MysqlTableDDLBuilder(source_db_host, source_db_port,
                 source_db_username, source_db_password);
-        String sourceDDL = tableFactory.getCdcTableDDL("jerry", "products");
+        String sourceDDL = tableFactory.getCdcTableDDL("jerry", "products",
+                new MysqlTableDDLBuilder.DDLContext().procTimeCol("proctime"));
         String dimDDL = tableFactory.getJdbcTableDDL("jessie", "products", "id");
+        String dim2DDL = tableFactory.getJdbcTableDDL("jerry", "products_sink", "id");
 
         String printDDL = "create table product_print (" +
                 "id INT," +
@@ -33,11 +35,14 @@ public class MysqlCdcJoinJdbc {
         tEnv.executeSql(sourceDDL);
         tEnv.executeSql(dimDDL);
         tEnv.executeSql(printDDL);
+        tEnv.executeSql(dim2DDL);
 
         tEnv.executeSql("INSERT INTO product_print " +
-                "SELECT T.id, T.name, E.description " +
+                "SELECT T.id, P.name, E.description " +
                 "FROM jerry.products AS T " +
                 "LEFT JOIN jessie.products FOR SYSTEM_TIME AS OF T.proctime AS E " +
-                "ON T.id = E.id");
+                "ON T.id = E.id " +
+                "LEFT JOIN jerry.products_sink FOR SYSTEM_TIME AS OF T.proctime AS P " +
+                "ON T.id = P.id");
     }
 }
