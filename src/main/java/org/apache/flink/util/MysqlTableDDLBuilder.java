@@ -13,7 +13,7 @@ public class MysqlTableDDLBuilder {
         typeMap.put("FLOAT", "FLOAT");
         typeMap.put("INT", "INT");
         typeMap.put("TIMESTAMP", "TIMESTAMP");
-        typeMap.put("DATETIME", "TIMESTAMP");
+        typeMap.put("DATETIME", "TIMESTAMP(3)");
         typeMap.put("TEXT", "STRING");
     }
 
@@ -32,6 +32,10 @@ public class MysqlTableDDLBuilder {
     }
 
     public String getCdcTableDDL(String database, String table) throws Exception {
+        return getCdcTableDDL(database, table, null, null);
+    }
+
+    public String getCdcTableDDL(String database, String table, String keyCol, String timeCol) throws Exception {
         Class.forName("com.mysql.jdbc.Driver");
         Connection con = DriverManager.getConnection(db_jdbcUrl, db_username, db_password);
         Statement stmt = con.createStatement();
@@ -47,9 +51,19 @@ public class MysqlTableDDLBuilder {
             sb.append("\n");
         }
 
+        if (keyCol != null) {
+            String pkeyDef = String.format(",PRIMARY KEY (%s) NOT ENFORCED\n", keyCol);
+            sb.append(pkeyDef);
+        }
+
+        if (timeCol != null) {
+            String tkeyDef = String.format(",WATERMARK FOR %s AS %s\n", timeCol, timeCol);
+            sb.append(tkeyDef);
+        }
+
         String columnDef = sb.toString();
         return String.format("CREATE TABLE %s(\n" +
-                " proctime AS PROCTIME ()," +
+                " proctime AS PROCTIME (),\n" +
                 "  %s) WITH (\n" +
                 " 'connector' = 'mysql-cdc',\n" +
                 " 'hostname' = '%s',\n" +
@@ -61,7 +75,8 @@ public class MysqlTableDDLBuilder {
                 " 'debezium.snapshot.locking.mode' = 'none',\n" +
                 " 'debezium.database.serverTimezone' = 'UTC',\n" +
                 " 'debezium.database.characterEncoding' = 'utf8',\n" +
-                " 'debezium.database.useUnicode' = 'true'\n" +
+                " 'debezium.database.useUnicode' = 'true',\n" +
+                " 'debezium.database.zeroDateTimeBehavior' = 'convertToNull'\n" +
                 ")",
                     database+"."+table, columnDef,
                     db_host, db_port,
@@ -69,11 +84,12 @@ public class MysqlTableDDLBuilder {
                     database, table);
     }
 
-    public String getJdbcTableDDL(String database, String table, String key)throws Exception {
+    public String getJdbcTableDDL(String database, String table, String keyCol)throws Exception {
         Class.forName("com.mysql.jdbc.Driver");
         Connection con = DriverManager.getConnection(db_jdbcUrl, db_username, db_password);
         Statement stmt = con.createStatement();
-        String jdbcUrl = String.format("jdbc:mysql://%s:%s/%s?useUnicode=true&characterEncoding=utf8",
+        String jdbcUrl = String.format("jdbc:mysql://%s:%s/%s?useUnicode=true" +
+                        "&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&serverTimezone=UTC",
                 db_host, db_port, database);
 
         ResultSet res = stmt.executeQuery(String.format("select * from %s.%s where 1<0", database, table));
@@ -87,15 +103,15 @@ public class MysqlTableDDLBuilder {
             sb.append("\n");
         }
 
-        if (key != null) {
-            String pkeyDef = String.format(",PRIMARY KEY (%s) NOT ENFORCED", key);
+        if (keyCol != null) {
+            String pkeyDef = String.format(",PRIMARY KEY (%s) NOT ENFORCED\n", keyCol);
             sb.append(pkeyDef);
         }
         String columnsDef = sb.toString();
 
         return String.format(
                 "CREATE TABLE %s (\n" +
-                        " proctime AS PROCTIME ()," +
+                        " proctime AS PROCTIME (),\n" +
                         " %s) WITH (\n" +
                         " 'connector' = 'jdbc',\n" +
                         " 'url' = '%s',\n" +
