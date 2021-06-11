@@ -12,6 +12,7 @@ public class MysqlTableDDLBuilder {
         typeMap.put("VARCHAR", "STRING");
         typeMap.put("FLOAT", "FLOAT");
         typeMap.put("INT", "INT");
+        typeMap.put("INT UNSIGNED", "BIGINT");
         typeMap.put("TIMESTAMP", "TIMESTAMP");
         typeMap.put("DATETIME", "TIMESTAMP(3)");
         typeMap.put("TEXT", "STRING");
@@ -36,7 +37,7 @@ public class MysqlTableDDLBuilder {
     }
 
     public String getCdcTableDDL(String database, String table, DDLContext ctx) throws Exception {
-        Class.forName("com.mysql.jdbc.Driver");
+        Class.forName("com.mysql.cj.jdbc.Driver");
         Connection con = DriverManager.getConnection(db_jdbcUrl, db_username, db_password);
         Statement stmt = con.createStatement();
 
@@ -92,7 +93,7 @@ public class MysqlTableDDLBuilder {
     }
 
     public String getJdbcTableDDL(String database, String table, String keyCol)throws Exception {
-        Class.forName("com.mysql.jdbc.Driver");
+        Class.forName("com.mysql.cj.jdbc.Driver");
         Connection con = DriverManager.getConnection(db_jdbcUrl, db_username, db_password);
         Statement stmt = con.createStatement();
         String jdbcUrl = String.format("jdbc:mysql://%s:%s/%s?useUnicode=true" +

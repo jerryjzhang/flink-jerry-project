@@ -1,5 +1,7 @@
 package org.apache.flink.quickstart;
 
+import org.apache.flink.contrib.streaming.state.EmbeddedRocksDBStateBackend;
+import org.apache.flink.streaming.api.environment.CheckpointConfig;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.EnvironmentSettings;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
@@ -10,6 +12,13 @@ public class MysqlCdcSync {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         StreamTableEnvironment tEnv = StreamTableEnvironment.create(env,
                 EnvironmentSettings.newInstance().useBlinkPlanner().inStreamingMode().build());
+
+//        env.enableCheckpointing(5 * 1000);
+//        env.getCheckpointConfig().setCheckpointStorage("file:///tmp/jerry/");
+//        EmbeddedRocksDBStateBackend stateBackend = new EmbeddedRocksDBStateBackend();
+//        stateBackend.setDbStoragePath("file:///tmp/rocksdb");
+//        env.setStateBackend(stateBackend);
+//        env.getCheckpointConfig().enableExternalizedCheckpoints(CheckpointConfig.ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION);
 
         MysqlTableDDLBuilder builder = new MysqlTableDDLBuilder("localhost", "3306",
                 "jerryjzhang", "tme");
