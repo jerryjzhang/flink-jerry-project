@@ -4,6 +4,7 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.EnvironmentSettings;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.util.MysqlTableDDLBuilder;
+import org.apache.flink.util.MysqlTableDDLBuilder.DDLContext;
 
 public class MysqlCdcJoinCdc {
     public static void main(String[] args)throws Exception {
@@ -14,9 +15,9 @@ public class MysqlCdcJoinCdc {
         MysqlTableDDLBuilder builder = new MysqlTableDDLBuilder("localhost", "3306",
                 "jerryjzhang", "tme");
         String sourceDDL = builder.getCdcTableDDL("jerry", "products",
-                "id", "update_time", -10);
+                new DDLContext().keyCol("id").rowTimeCol("update_time").watermarkInterval(-10));
         String source2DDL = builder.getCdcTableDDL("jerry", "products_sink",
-                "id", "update_time", 0);
+                new DDLContext().keyCol("id").rowTimeCol("update_time"));
         System.out.println(sourceDDL);
         System.out.println(source2DDL);
 

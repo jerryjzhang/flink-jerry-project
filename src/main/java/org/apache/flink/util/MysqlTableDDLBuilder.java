@@ -32,10 +32,10 @@ public class MysqlTableDDLBuilder {
     }
 
     public String getCdcTableDDL(String database, String table) throws Exception {
-        return getCdcTableDDL(database, table, null, null, 0);
+        return getCdcTableDDL(database, table, DDLContext.EMPTY);
     }
 
-    public String getCdcTableDDL(String database, String table, String keyCol, String timeCol, int interval) throws Exception {
+    public String getCdcTableDDL(String database, String table, DDLContext ctx) throws Exception {
         Class.forName("com.mysql.jdbc.Driver");
         Connection con = DriverManager.getConnection(db_jdbcUrl, db_username, db_password);
         Statement stmt = con.createStatement();
@@ -51,24 +51,26 @@ public class MysqlTableDDLBuilder {
             sb.append("\n");
         }
 
-        if (keyCol != null) {
-            String pkeyDef = String.format(",PRIMARY KEY (%s) NOT ENFORCED\n", keyCol);
-            sb.append(pkeyDef);
+        if (ctx.procTimeCol != null) {
+            sb.append(String.format(",%s AS PROCTIME()\n", ctx.procTimeCol));
         }
 
-        if (timeCol != null) {
-            String tkeyDef = String.format(",WATERMARK FOR %s AS %s", timeCol, timeCol);
+        if (ctx.keyCol != null) {
+            sb.append(String.format(",PRIMARY KEY (%s) NOT ENFORCED\n", ctx.keyCol));
+        }
+
+        if (ctx.rowTimeCol != null) {
+            String tkeyDef = String.format(",WATERMARK FOR %s AS %s", ctx.rowTimeCol, ctx.rowTimeCol);
             sb.append(tkeyDef);
-            if (interval > 0) {
-                sb.append(String.format(" + INTERVAL '%d' SECONDS", interval));
-            } else if(interval < 0) {
-                sb.append(String.format(" - INTERVAL '%d' SECONDS", 0 - interval));
+            if (ctx.watermarkInterval != null &&  ctx.watermarkInterval > 0) {
+                sb.append(String.format(" + INTERVAL '%d' SECONDS", ctx.watermarkInterval));
+            } else if(ctx.watermarkInterval != null &&  ctx.watermarkInterval < 0) {
+                sb.append(String.format(" - INTERVAL '%d' SECONDS", 0 - ctx.watermarkInterval));
             }
         }
 
         String columnDef = sb.toString();
         return String.format("CREATE TABLE %s(\n" +
-                " proctime AS PROCTIME (),\n" +
                 " %s) WITH (\n" +
                 " 'connector' = 'mysql-cdc',\n" +
                 " 'hostname' = '%s',\n" +
@@ -116,7 +118,6 @@ public class MysqlTableDDLBuilder {
 
         return String.format(
                 "CREATE TABLE %s (\n" +
-                        " proctime AS PROCTIME (),\n" +
                         " %s) WITH (\n" +
                         " 'connector' = 'jdbc',\n" +
                         " 'url' = '%s',\n" +
@@ -127,5 +128,30 @@ public class MysqlTableDDLBuilder {
                 database+"."+table, columnsDef, jdbcUrl, db_username, db_password, table);
     }
 
+    public static class DDLContext {
+        public String keyCol;
+        public String rowTimeCol;
+        public Integer watermarkInterval;
+        public String procTimeCol;
+
+        public static DDLContext EMPTY = new DDLContext();
+
+        public DDLContext keyCol(String keyCol) {
+            this.keyCol = keyCol;
+            return this;
+        }
+        public DDLContext rowTimeCol(String rowTimeCol) {
+            this.rowTimeCol = rowTimeCol;
+            return this;
+        }
+        public DDLContext watermarkInterval(Integer watermarkInterval) {
+            this.watermarkInterval = watermarkInterval;
+            return this;
+        }
+        public DDLContext procTimeCol(String procTimeCol) {
+            this.procTimeCol = procTimeCol;
+            return this;
+        }
+    }
 
 }
