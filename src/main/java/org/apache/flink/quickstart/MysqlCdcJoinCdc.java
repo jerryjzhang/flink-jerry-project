@@ -3,53 +3,23 @@ package org.apache.flink.quickstart;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.EnvironmentSettings;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
+import org.apache.flink.util.MysqlTableDDLBuilder;
 
 public class MysqlCdcJoinCdc {
-    public static void main(String[] args) {
+    public static void main(String[] args)throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         StreamTableEnvironment tEnv = StreamTableEnvironment.create(env,
                 EnvironmentSettings.newInstance().useBlinkPlanner().inStreamingMode().build());
-        env.setParallelism(1);
 
-        String sourceDDL = String.format(
-                "CREATE TABLE table1 (" +
-                        " id INT NOT NULL," +
-                        " name STRING," +
-                        " description STRING," +
-                        " weight DECIMAL(10,3)," +
-                        " update_time TIMESTAMP(3)," +
-                        " WATERMARK FOR update_time AS update_time - INTERVAL '5' SECONDS"  +
-                        ") WITH (" +
-                        " 'connector' = 'mysql-cdc'," +
-                        " 'hostname' = '%s'," +
-                        " 'port' = '%s'," +
-                        " 'username' = '%s'," +
-                        " 'password' = '%s'," +
-                        " 'database-name' = '%s'," +
-                        " 'table-name' = '%s'," +
-                        " 'debezium.database.serverTimezone' = 'UTC'" +
-                        ")",
-                "localhost", 3306, "jerryjzhang", "tme", "jerry", "products");
-        String source2DDL = String.format(
-                "CREATE TABLE table2 (" +
-                        " id INT NOT NULL," +
-                        " name STRING," +
-                        " description STRING," +
-                        " weight DECIMAL(10,3)," +
-                        " update_time TIMESTAMP(3)," +
-                        " PRIMARY KEY (id) NOT ENFORCED," +
-                        " WATERMARK FOR update_time AS update_time"  +
-                        ") WITH (" +
-                        " 'connector' = 'mysql-cdc'," +
-                        " 'hostname' = '%s'," +
-                        " 'port' = '%s'," +
-                        " 'username' = '%s'," +
-                        " 'password' = '%s'," +
-                        " 'database-name' = '%s'," +
-                        " 'table-name' = '%s'," +
-                        " 'debezium.database.serverTimezone' = 'UTC'" +
-                        ")",
-                "localhost", 3306, "jerryjzhang", "tme", "jerry", "products_sink");
+        MysqlTableDDLBuilder builder = new MysqlTableDDLBuilder("localhost", "3306",
+                "jerryjzhang", "tme");
+        String sourceDDL = builder.getCdcTableDDL("jerry", "products",
+                "id", "update_time", -10);
+        String source2DDL = builder.getCdcTableDDL("jerry", "products_sink",
+                "id", "update_time", 0);
+        System.out.println(sourceDDL);
+        System.out.println(source2DDL);
+
         String sinkDDL = "CREATE TABLE sinkTable (" +
                 " a INT," +
                 " b INT," +
@@ -60,14 +30,15 @@ public class MysqlCdcJoinCdc {
                 " 'connector' = 'print'" +
                 ")";
 
+        tEnv.executeSql("CREATE DATABASE IF NOT EXISTS jerry");
         tEnv.executeSql(sourceDDL);
         tEnv.executeSql(source2DDL);
         tEnv.executeSql(sinkDDL);
 
         tEnv.executeSql("insert into sinkTable " +
                 "select T.id, D.id, T.name, T.update_time " +
-                "from table1 AS T " +
-                "LEFT JOIN table2 FOR SYSTEM_TIME AS OF T.update_time AS D " +
+                "from jerry.products AS T " +
+                "LEFT JOIN jerry.products_sink FOR SYSTEM_TIME AS OF T.update_time AS D " +
                 "ON T.id = D.id");
     }
 }

@@ -32,10 +32,10 @@ public class MysqlTableDDLBuilder {
     }
 
     public String getCdcTableDDL(String database, String table) throws Exception {
-        return getCdcTableDDL(database, table, null, null);
+        return getCdcTableDDL(database, table, null, null, 0);
     }
 
-    public String getCdcTableDDL(String database, String table, String keyCol, String timeCol) throws Exception {
+    public String getCdcTableDDL(String database, String table, String keyCol, String timeCol, int interval) throws Exception {
         Class.forName("com.mysql.jdbc.Driver");
         Connection con = DriverManager.getConnection(db_jdbcUrl, db_username, db_password);
         Statement stmt = con.createStatement();
@@ -57,14 +57,19 @@ public class MysqlTableDDLBuilder {
         }
 
         if (timeCol != null) {
-            String tkeyDef = String.format(",WATERMARK FOR %s AS %s\n", timeCol, timeCol);
+            String tkeyDef = String.format(",WATERMARK FOR %s AS %s", timeCol, timeCol);
             sb.append(tkeyDef);
+            if (interval > 0) {
+                sb.append(String.format(" + INTERVAL '%d' SECONDS", interval));
+            } else if(interval < 0) {
+                sb.append(String.format(" - INTERVAL '%d' SECONDS", 0 - interval));
+            }
         }
 
         String columnDef = sb.toString();
         return String.format("CREATE TABLE %s(\n" +
                 " proctime AS PROCTIME (),\n" +
-                "  %s) WITH (\n" +
+                " %s) WITH (\n" +
                 " 'connector' = 'mysql-cdc',\n" +
                 " 'hostname' = '%s',\n" +
                 " 'port' = '%s',\n" +
