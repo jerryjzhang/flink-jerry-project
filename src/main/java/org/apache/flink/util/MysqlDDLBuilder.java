@@ -4,7 +4,7 @@ import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
 
-public class MysqlTableDDLBuilder {
+public class MysqlDDLBuilder {
     static Map<String, String> typeMap = new HashMap<>();
     static {
         typeMap.put("TINYINT", "TINYINT");
@@ -24,7 +24,7 @@ public class MysqlTableDDLBuilder {
     final String db_password;
     final String db_jdbcUrl;
 
-    public MysqlTableDDLBuilder(String host, String port, String username, String password) {
+    public MysqlDDLBuilder(String host, String port, String username, String password) {
         this.db_host = host;
         this.db_port = port;
         this.db_password = password;

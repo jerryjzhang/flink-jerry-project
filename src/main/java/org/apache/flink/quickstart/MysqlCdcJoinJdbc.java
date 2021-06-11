@@ -3,7 +3,7 @@ package org.apache.flink.quickstart;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.EnvironmentSettings;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
-import org.apache.flink.util.MysqlTableDDLBuilder;
+import org.apache.flink.util.MysqlDDLBuilder;
 
 public class MysqlCdcJoinJdbc {
     static String source_db_host = "localhost";
@@ -16,10 +16,10 @@ public class MysqlCdcJoinJdbc {
         StreamTableEnvironment tEnv = StreamTableEnvironment.create(env,
                 EnvironmentSettings.newInstance().useBlinkPlanner().inStreamingMode().build());
 
-        MysqlTableDDLBuilder tableFactory = new MysqlTableDDLBuilder(source_db_host, source_db_port,
+        MysqlDDLBuilder tableFactory = new MysqlDDLBuilder(source_db_host, source_db_port,
                 source_db_username, source_db_password);
         String sourceDDL = tableFactory.getCdcTableDDL("jerry", "products",
-                new MysqlTableDDLBuilder.DDLContext().procTimeCol("proctime"));
+                new MysqlDDLBuilder.DDLContext().procTimeCol("proctime"));
         String dimDDL = tableFactory.getJdbcTableDDL("jessie", "products", "id");
         String dim2DDL = tableFactory.getJdbcTableDDL("jerry", "products_sink", "id");
 

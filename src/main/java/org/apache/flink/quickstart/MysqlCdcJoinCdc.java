@@ -3,8 +3,8 @@ package org.apache.flink.quickstart;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.EnvironmentSettings;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
-import org.apache.flink.util.MysqlTableDDLBuilder;
-import org.apache.flink.util.MysqlTableDDLBuilder.DDLContext;
+import org.apache.flink.util.MysqlDDLBuilder;
+import org.apache.flink.util.MysqlDDLBuilder.DDLContext;
 
 public class MysqlCdcJoinCdc {
     public static void main(String[] args)throws Exception {
@@ -12,7 +12,7 @@ public class MysqlCdcJoinCdc {
         StreamTableEnvironment tEnv = StreamTableEnvironment.create(env,
                 EnvironmentSettings.newInstance().useBlinkPlanner().inStreamingMode().build());
 
-        MysqlTableDDLBuilder builder = new MysqlTableDDLBuilder("localhost", "3306",
+        MysqlDDLBuilder builder = new MysqlDDLBuilder("localhost", "3306",
                 "jerryjzhang", "tme");
         String sourceDDL = builder.getCdcTableDDL("jerry", "products",
                 new DDLContext().keyCol("id").rowTimeCol("update_time").watermarkInterval(-10));
