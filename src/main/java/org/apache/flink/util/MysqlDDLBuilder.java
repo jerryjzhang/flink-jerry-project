@@ -1,7 +1,9 @@
 package org.apache.flink.util;
 
 import java.sql.*;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class MysqlDDLBuilder {
@@ -9,6 +11,7 @@ public class MysqlDDLBuilder {
     static {
         typeMap.put("TINYINT", "TINYINT");
         typeMap.put("SMALLINT", "SMALLINT");
+        typeMap.put("BIGINT", "BIGINT");
         typeMap.put("VARCHAR", "STRING");
         typeMap.put("FLOAT", "FLOAT");
         typeMap.put("INT", "INT");
@@ -32,11 +35,11 @@ public class MysqlDDLBuilder {
         this.db_jdbcUrl = String.format("jdbc:mysql://%s:%s?useUnicode=true&characterEncoding=utf8", host, port);
     }
 
-    public String getCdcTableDDL(String database, String table) throws Exception {
-        return getCdcTableDDL(database, table, DDLContext.EMPTY);
+    public String getColumnDef(String database, String table, DDLContext ctx) throws Exception {
+        return getColumnDef(database, table, ctx, null);
     }
 
-    public String getCdcTableDDL(String database, String table, DDLContext ctx) throws Exception {
+    public String getColumnDef(String database, String table, DDLContext ctx, List<String> includeColumns) throws Exception {
         Class.forName("com.mysql.cj.jdbc.Driver");
         Connection con = DriverManager.getConnection(db_jdbcUrl, db_username, db_password);
         Statement stmt = con.createStatement();
@@ -44,11 +47,15 @@ public class MysqlDDLBuilder {
         ResultSet res = stmt.executeQuery(String.format("select * from %s.%s where 1<0", database, table));
         ResultSetMetaData rsmd = res.getMetaData();
         StringBuilder sb = new StringBuilder();
+        int columnCnt = 1;
         for(int i = 1; i <= rsmd.getColumnCount(); i++) {
-            sb.append(rsmd.getColumnName(i) + " " + typeMap.get(rsmd.getColumnTypeName(i)));
-            if (i < rsmd.getColumnCount()) {
+            if (includeColumns != null && !includeColumns.contains(rsmd.getColumnName(i))) {
+                continue;
+            }
+            if (columnCnt++ > 1) {
                 sb.append(",");
             }
+            sb.append(rsmd.getColumnName(i) + " " + typeMap.get(rsmd.getColumnTypeName(i)));
             sb.append("\n");
         }
 
@@ -70,7 +77,16 @@ public class MysqlDDLBuilder {
             }
         }
 
-        String columnDef = sb.toString();
+        return sb.toString();
+    }
+
+    public String getCdcTableDDL(String database, String table) throws Exception {
+        return getCdcTableDDL(database, table, DDLContext.EMPTY);
+    }
+
+    public String getCdcTableDDL(String database, String table, DDLContext ctx) throws Exception {
+        String columnDef = getColumnDef(database, table, ctx);
+
         return String.format("CREATE TABLE %s(\n" +
                 " %s) WITH (\n" +
                 " 'connector' = 'mysql-cdc',\n" +
@@ -92,31 +108,12 @@ public class MysqlDDLBuilder {
                     database, table);
     }
 
-    public String getJdbcTableDDL(String database, String table, String keyCol)throws Exception {
-        Class.forName("com.mysql.cj.jdbc.Driver");
-        Connection con = DriverManager.getConnection(db_jdbcUrl, db_username, db_password);
-        Statement stmt = con.createStatement();
+    public String getJdbcTableDDL(String database, String table, DDLContext ctx)throws Exception {
+        String columnDef = getColumnDef(database, table, ctx);
+
         String jdbcUrl = String.format("jdbc:mysql://%s:%s/%s?useUnicode=true" +
                         "&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&serverTimezone=UTC",
                 db_host, db_port, database);
-
-        ResultSet res = stmt.executeQuery(String.format("select * from %s.%s where 1<0", database, table));
-        ResultSetMetaData rsmd = res.getMetaData();
-        StringBuilder sb = new StringBuilder();
-        for(int i = 1; i <= rsmd.getColumnCount(); i++) {
-            sb.append(rsmd.getColumnName(i) + " " + typeMap.get(rsmd.getColumnTypeName(i)));
-            if (i < rsmd.getColumnCount()) {
-                sb.append(",");
-            }
-            sb.append("\n");
-        }
-
-        if (keyCol != null) {
-            String pkeyDef = String.format(",PRIMARY KEY (%s) NOT ENFORCED\n", keyCol);
-            sb.append(pkeyDef);
-        }
-        String columnsDef = sb.toString();
-
         return String.format(
                 "CREATE TABLE %s (\n" +
                         " %s) WITH (\n" +
@@ -124,9 +121,10 @@ public class MysqlDDLBuilder {
                         " 'url' = '%s',\n" +
                         " 'username' = '%s',\n" +
                         " 'password' = '%s',\n" +
-                        " 'table-name' = '%s'\n" +
+                        " 'table-name' = '%s',\n" +
+                        " 'sink.buffer-flush.max-rows' = '10000'\n" +
                         ")",
-                database+"."+table, columnsDef, jdbcUrl, db_username, db_password, table);
+                database+"."+table, columnDef, jdbcUrl, db_username, db_password, table);
     }
 
     public static class DDLContext {

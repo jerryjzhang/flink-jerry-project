@@ -9,11 +9,15 @@ import org.apache.flink.table.api.StatementSet;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.util.MysqlDDLBuilder;
 
+import java.util.Arrays;
+import java.util.List;
+
 public class MysqlCdcSyncEs {
     public static void main(String [] args)throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         StreamTableEnvironment tEnv = StreamTableEnvironment.create(env,
                 EnvironmentSettings.newInstance().useBlinkPlanner().inStreamingMode().build());
+        StatementSet statementSet = tEnv.createStatementSet();
 
         env.enableCheckpointing(10 * 1000);
         env.getCheckpointConfig().setCheckpointingMode(CheckpointingMode.EXACTLY_ONCE);
@@ -26,38 +30,44 @@ public class MysqlCdcSyncEs {
         String sourceDDL = builder.getCdcTableDDL("jerry", "products");
         String source2DDL = builder.getCdcTableDDL("jerry", "products_sink");
 
-        String sinkEsDDL = "CREATE TABLE product_es (\n" +
-                "id INT," +
-                "name STRING,\n" +
-                "PRIMARY KEY(id) NOT ENFORCED\n" +
+        String esDDLTemplate = "CREATE TABLE %s (\n" +
+                "%s\n" +
                 ") WITH (\n" +
                 "  'connector' = 'elasticsearch-7',\n" +
                 "  'hosts' = 'http://localhost:9200',\n" +
                 "  'index' = 'jerry_product'\n" +
                 ")";
 
-        String sinkEs2DDL = "CREATE TABLE product_es2 (\n" +
-                "id INT," +
-                "weight DECIMAL(10,3),\n" +
-                "PRIMARY KEY(id) NOT ENFORCED\n" +
-                ") WITH (\n" +
-                "  'connector' = 'elasticsearch-7',\n" +
-                "  'hosts' = 'http://localhost:9200',\n" +
-                "  'index' = 'jerry_product'\n" +
-                ")";
+        createTableSync(tEnv, statementSet, builder, esDDLTemplate,
+                "jerry", "products", "id", Arrays.asList("id", "name"));
+        createTableSync(tEnv, statementSet, builder, esDDLTemplate,
+                "jerry", "products_sink", "id", Arrays.asList("id", "weight"));
 
-        tEnv.executeSql("CREATE DATABASE IF NOT EXISTS jerry");
+        statementSet.execute();
+    }
+
+    public static void createTableSync(StreamTableEnvironment tEnv, StatementSet sqlInserts, MysqlDDLBuilder tableFactory,
+                                String sinkDDLTemplate, String database, String table,
+                                String keyColumn, List<String> selectColumns) throws Exception {
+        String sourceTableName = database + "." + table;
+        String sinkTableName = sourceTableName + "_es";
+
+        String sourceDDL = tableFactory.getCdcTableDDL(database, table);
+        String columnDef = tableFactory.getColumnDef(database, table,
+                new MysqlDDLBuilder.DDLContext().keyCol(keyColumn), selectColumns);
+        String sinkDDL = String.format(sinkDDLTemplate, sinkTableName, columnDef);
+
+        tEnv.executeSql("create database if not exists " + database);
         tEnv.executeSql(sourceDDL);
-        tEnv.executeSql(source2DDL);
-        tEnv.executeSql(sinkEs2DDL);
-        tEnv.executeSql(sinkEsDDL);
+        tEnv.executeSql(sinkDDL);
+        System.out.println(sourceDDL);
+        System.out.println(sinkDDL);
 
-        StatementSet set = tEnv.createStatementSet();
-        set.addInsertSql("INSERT INTO product_es SELECT id, name FROM " +
-                "jerry.products");
-        set.addInsertSql("INSERT INTO product_es2 SELECT id, weight FROM " +
-                "jerry.products");
-        System.out.println(set.explain());
-        set.execute();
+        String selects = String.join(",", selectColumns);
+        String dml = String.format(
+                "INSERT INTO %s (%s) SELECT %s FROM %s",
+                sinkTableName, selects, selects, sourceTableName);
+        sqlInserts.addInsertSql(dml);
+        System.out.println(dml);
     }
 }
