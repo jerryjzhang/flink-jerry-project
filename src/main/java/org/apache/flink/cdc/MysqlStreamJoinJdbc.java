@@ -1,4 +1,4 @@
-package org.apache.flink.quickstart;
+package org.apache.flink.cdc;
 
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.EnvironmentSettings;

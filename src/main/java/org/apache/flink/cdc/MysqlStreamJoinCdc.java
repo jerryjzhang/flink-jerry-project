@@ -1,4 +1,4 @@
-package org.apache.flink.quickstart;
+package org.apache.flink.cdc;
 
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.java.tuple.Tuple3;

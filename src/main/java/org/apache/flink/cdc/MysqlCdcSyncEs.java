@@ -1,4 +1,4 @@
-package org.apache.flink.quickstart;
+package org.apache.flink.cdc;
 
 import org.apache.flink.runtime.state.hashmap.HashMapStateBackend;
 import org.apache.flink.streaming.api.CheckpointingMode;

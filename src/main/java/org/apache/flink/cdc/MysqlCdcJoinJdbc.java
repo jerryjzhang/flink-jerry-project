@@ -1,4 +1,4 @@
-package org.apache.flink.quickstart;
+package org.apache.flink.cdc;
 
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.EnvironmentSettings;
@@ -20,8 +20,10 @@ public class MysqlCdcJoinJdbc {
                 source_db_username, source_db_password);
         String sourceDDL = tableFactory.getCdcTableDDL("jerry", "products",
                 new MysqlDDLBuilder.DDLContext().procTimeCol("proctime"));
-        String dimDDL = tableFactory.getJdbcTableDDL("jessie", "products", "id");
-        String dim2DDL = tableFactory.getJdbcTableDDL("jerry", "products_sink", "id");
+        String dimDDL = tableFactory.getJdbcTableDDL("jessie", "products",
+                new MysqlDDLBuilder.DDLContext().keyCol("id"));
+        String dim2DDL = tableFactory.getJdbcTableDDL("jerry", "products_sink",
+                new MysqlDDLBuilder.DDLContext().keyCol("id"));
 
         String printDDL = "create table product_print (" +
                 "id INT," +
