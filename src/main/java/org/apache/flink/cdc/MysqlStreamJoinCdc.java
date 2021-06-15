@@ -61,7 +61,7 @@ public class MysqlStreamJoinCdc {
         tEnv.executeSql("insert into sinkTable " +
                 "select T.a, T.b, T.rt, D.name, D.update_time " +
                 "from sourceTable AS T " +
-                "LEFT JOIN dimTable FOR SYSTEM_TIME AS OF T.rt AS D " +
+                "LEFT JOIN dimTable FOR SYSTEM_TIME AS OF T.pt AS D " +
                 "ON T.a = D.id");
     }
 }
