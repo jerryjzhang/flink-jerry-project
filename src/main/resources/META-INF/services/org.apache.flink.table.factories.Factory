@@ -14,5 +14,6 @@
 # limitations under the License.
 
 com.alibaba.ververica.cdc.connectors.mysql.table.MySQLTableSourceFactory
+org.apache.flink.streaming.connectors.elasticsearch.table.Elasticsearch6DynamicSinkFactory
 org.apache.flink.streaming.connectors.elasticsearch.table.Elasticsearch7DynamicSinkFactory
 org.apache.flink.connector.jdbc.table.JdbcDynamicTableFactory

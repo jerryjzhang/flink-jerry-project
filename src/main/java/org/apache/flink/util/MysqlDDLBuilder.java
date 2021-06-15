@@ -1,7 +1,6 @@
 package org.apache.flink.util;
 
 import java.sql.*;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,11 +13,12 @@ public class MysqlDDLBuilder {
         typeMap.put("BIGINT", "BIGINT");
         typeMap.put("VARCHAR", "STRING");
         typeMap.put("FLOAT", "FLOAT");
-        typeMap.put("INT", "INT");
+        typeMap.put("INT", "BIGINT");
         typeMap.put("INT UNSIGNED", "BIGINT");
         typeMap.put("TIMESTAMP", "TIMESTAMP");
         typeMap.put("DATETIME", "TIMESTAMP(3)");
         typeMap.put("TEXT", "STRING");
+        typeMap.put("LONGTEXT", "STRING");
     }
 
     final String db_host;
@@ -122,9 +122,12 @@ public class MysqlDDLBuilder {
                         " 'username' = '%s',\n" +
                         " 'password' = '%s',\n" +
                         " 'table-name' = '%s',\n" +
-                        " 'sink.buffer-flush.max-rows' = '10000'\n" +
+                        " 'sink.buffer-flush.max-rows' = '10000',\n" +
+                        " 'sink.buffer-flush.interval' = '60s',\n" +
+                        " 'sink.parallelism' = '%d'\n" +
                         ")",
-                database+"."+table, columnDef, jdbcUrl, db_username, db_password, table);
+                database+"."+table, columnDef, jdbcUrl,
+                db_username, db_password, table, ctx.parallelism);
     }
 
     public static class DDLContext {
@@ -132,6 +135,7 @@ public class MysqlDDLBuilder {
         public String rowTimeCol;
         public Integer watermarkInterval;
         public String procTimeCol;
+        public Integer parallelism = 1;
 
         public static DDLContext EMPTY = new DDLContext();
 
@@ -149,6 +153,10 @@ public class MysqlDDLBuilder {
         }
         public DDLContext procTimeCol(String procTimeCol) {
             this.procTimeCol = procTimeCol;
+            return this;
+        }
+        public DDLContext parallelism(Integer parallelism) {
+            this.parallelism = parallelism;
             return this;
         }
     }

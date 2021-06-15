@@ -38,7 +38,7 @@ under the License.
 		<avro.version>1.8.2</avro.version>
 		<hbase.version>1.4.3</hbase.version>
 		<flink.cdc.version>1.4.0</flink.cdc.version>
-		<main.class>org.apache.flink.cms.MysqlCdcSync</main.class>
+		<main.class>org.apache.flink.cms.MysqlCdcSyncEs</main.class>
 	</properties>
 
 	<repositories>
@@ -105,6 +105,12 @@ under the License.
 		</dependency>
 		<dependency>
 			<groupId>org.apache.flink</groupId>
+			<artifactId>flink-connector-elasticsearch6_${scala.binary.version}</artifactId>
+			<version>${flink.version}</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-connector-elasticsearch7_${scala.binary.version}</artifactId>
 			<version>${flink.version}</version>
 			<scope>compile</scope>
@@ -133,6 +139,12 @@ under the License.
 			<version>${flink.version}</version>
 			<scope>compile</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.apache.flink</groupId>
+			<artifactId>flink-state-processor-api_2.11</artifactId>
+			<version>${flink.version}</version>
+		</dependency>
+
 
 		<!-- Add logging framework, to produce console output when running in the IDE. -->
 		<!-- These dependencies are excluded from the application JAR by default. -->
