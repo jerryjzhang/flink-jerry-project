@@ -15,14 +15,13 @@ public class MysqlCdcSyncKafka {
                 "jerryjzhang", "tme");
         String sourceDDL = builder.getCdcTableDDL("jerry", "products");
         String columnDef = builder.getColumnDef("jerry", "products",
-                new MysqlDDLBuilder.DDLContext().keyCol("id"));
+                new MysqlDDLBuilder.DDLContext());
         String sinkDDL = String.format("CREATE TABLE jerry.products_kafka (\n" +
                 " %s" +
                 ") WITH (\n" +
                 " 'connector' = 'kafka',\n" +
                 " 'topic' = 'c2_track',\n" +
                 " 'properties.bootstrap.servers' = 'localhost:9092',\n" +
-                " 'properties.group.id' = 'testGroup',\n" +
                 " 'format' = 'debezium-json'\n" +
                 ")", columnDef);
 
