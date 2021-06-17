@@ -1,20 +1,27 @@
 package org.apache.flink.util;
 
-public class MysqlCdcDDLBuilder extends AbstractMysqlDDLBuilder {
+import org.apache.flink.configuration.Configuration;
+
+public class MysqlCdcDDLBuilder implements DDLBuilder {
+    private final String db_host;
+    private final String db_port;
+    private final String db_username;
+    private final String db_password;
+
     public MysqlCdcDDLBuilder(String host, String port, String username, String password) {
-        super(host, port, username, password);
+        this.db_host = host;
+        this.db_port = port;
+        this.db_password = password;
+        this.db_username = username;
     }
 
     @Override
-    public String getDDLString(String database, String table,
-                               DDLContext ctx) {
-        String columnDef;
-        try {
-            columnDef = getDDLColumnDef(database, table, ctx);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+    public String getDDLTableName(String database, String table) {
+        return database + "." + table + "_cdc";
+    }
 
+    @Override
+    public String getDDLString(String database, String table, String columnDef, Configuration options) {
         return String.format("CREATE TABLE %s(\n" +
                         " %s) WITH (\n" +
                         " 'connector' = 'mysql-cdc',\n" +

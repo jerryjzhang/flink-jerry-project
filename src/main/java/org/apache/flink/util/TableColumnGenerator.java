@@ -2,9 +2,10 @@ package org.apache.flink.util;
 
 import java.sql.*;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-public abstract class AbstractMysqlDDLBuilder extends AbstractDDLBuilder {
+public class TableColumnGenerator {
     private static Map<String, String> typeMap = new HashMap<>();
     static {
         typeMap.put("TINYINT", "TINYINT");
@@ -18,6 +19,7 @@ public abstract class AbstractMysqlDDLBuilder extends AbstractDDLBuilder {
         typeMap.put("DATETIME", "TIMESTAMP(3)");
         typeMap.put("TEXT", "STRING");
         typeMap.put("LONGTEXT", "STRING");
+        typeMap.put("DOUBLE", "DOUBLE");
     }
 
     protected final String db_host;
@@ -26,21 +28,15 @@ public abstract class AbstractMysqlDDLBuilder extends AbstractDDLBuilder {
     protected final String db_password;
     protected final String db_jdbcUrl;
 
-    public AbstractMysqlDDLBuilder(String host, String port, String username, String password) {
+    public TableColumnGenerator(String host, String port, String username, String password) {
         this.db_host = host;
         this.db_port = port;
         this.db_password = password;
         this.db_username = username;
         this.db_jdbcUrl = String.format("jdbc:mysql://%s:%s?useUnicode=true&characterEncoding=utf8", host, port);
     }
-
-    @Override
-    public String getDDLTableName(String database, String table) {
-        return database + "." + table + "_db";
-    }
-
-    public String getDDLColumnDef(String database, String table,
-                                  DDLContext ctx) throws Exception {
+    
+    public String generateDefinition(String database, String table, DDLContext ctx) throws Exception {
         Class.forName("com.mysql.cj.jdbc.Driver");
         Connection con = DriverManager.getConnection(db_jdbcUrl, db_username, db_password);
         Statement stmt = con.createStatement();
@@ -64,12 +60,17 @@ public abstract class AbstractMysqlDDLBuilder extends AbstractDDLBuilder {
             sb.append(String.format(",%s AS PROCTIME()\n", ctx.procTimeCol));
         }
 
-        DatabaseMetaData dm = con.getMetaData();
-        ResultSet rs = dm.getPrimaryKeys( null , null , table);
-        if (rs.next()) {
-            String pkey = rs.getString("COLUMN_NAME");
-            sb.append(String.format(",PRIMARY KEY (%s) NOT ENFORCED\n", pkey));
+        String pkey = null;
+        if (ctx.keyCol != null) {
+            pkey = ctx.keyCol;
+        } else {
+            DatabaseMetaData dm = con.getMetaData();
+            ResultSet rs = dm.getPrimaryKeys(null, null, table);
+            if (rs.next()) {
+                pkey = rs.getString("COLUMN_NAME");
+            }
         }
+        sb.append(String.format(",PRIMARY KEY (%s) NOT ENFORCED\n", pkey));
 
         if (ctx.rowTimeCol != null) {
             String tkeyDef = String.format(",WATERMARK FOR %s AS %s", ctx.rowTimeCol, ctx.rowTimeCol);
@@ -84,6 +85,35 @@ public abstract class AbstractMysqlDDLBuilder extends AbstractDDLBuilder {
         return sb.toString();
     }
 
-    @Override
-    public abstract String getDDLString(String database, String table, DDLContext ctx);
+
+    public static class DDLContext {
+        public String keyCol;
+        public String rowTimeCol;
+        public String procTimeCol;
+        public Integer watermarkInterval;
+        public List<String> includeColumns;
+
+        public static DDLContext EMPTY = new DDLContext();
+
+        public  DDLContext keyCol(String keyCol) {
+            this.keyCol = keyCol;
+            return this;
+        }
+        public  DDLContext rowTimeCol(String rowTimeCol) {
+            this.rowTimeCol = rowTimeCol;
+            return this;
+        }
+        public  DDLContext watermarkInterval(Integer watermarkInterval) {
+            this.watermarkInterval = watermarkInterval;
+            return this;
+        }
+        public  DDLContext procTimeCol(String procTimeCol) {
+            this.procTimeCol = procTimeCol;
+            return this;
+        }
+        public  DDLContext includedColumns(List<String> includeColumns) {
+            this.includeColumns = includeColumns;
+            return this;
+        }
+    }
 }

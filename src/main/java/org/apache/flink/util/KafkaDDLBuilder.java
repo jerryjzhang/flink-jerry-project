@@ -1,6 +1,8 @@
 package org.apache.flink.util;
 
-public class KafkaDDLBuilder extends AbstractDDLBuilder {
+import org.apache.flink.configuration.Configuration;
+
+public class KafkaDDLBuilder implements DDLBuilder {
     private final String kafkaServers;
 
     public KafkaDDLBuilder(String kafkaServers) {
@@ -13,9 +15,10 @@ public class KafkaDDLBuilder extends AbstractDDLBuilder {
     }
 
     @Override
-    public String getDDLString(String database, String table, DDLContext ctx) {
+    public String getDDLString(String database, String table, String columnDef, Configuration options) {
         String tableName = getDDLTableName(database, table);
         String topic = database + "." + table;
+        Integer sinkParallelism = options.get(DDLBuilder.OPTION_SINK_PARAMETER);
         return  String.format("CREATE TABLE %s (\n" +
                         " %s" +
                         ") WITH (\n" +
@@ -24,8 +27,9 @@ public class KafkaDDLBuilder extends AbstractDDLBuilder {
                         " 'properties.bootstrap.servers' = '%s',\n" +
                         " 'format' = 'debezium-json',\n" +
                         " 'properties.group.id' = 'cmsSyncGroup',\n" +
-                        " 'scan.startup.mode' = 'earliest-offset'\n" +
+                        " 'scan.startup.mode' = 'earliest-offset',\n" +
+                        " 'sink.parallelism' = '%d'\n" +
                         ")",
-                tableName, ctx.columnDef, topic, kafkaServers);
+                tableName, columnDef, topic, kafkaServers, sinkParallelism);
     }
 }
