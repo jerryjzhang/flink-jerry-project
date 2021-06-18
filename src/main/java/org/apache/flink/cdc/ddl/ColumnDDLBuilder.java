@@ -1,11 +1,11 @@
-package org.apache.flink.util;
+package org.apache.flink.cdc.ddl;
 
 import java.sql.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class TableColumnGenerator {
+public class ColumnDDLBuilder {
     private static Map<String, String> typeMap = new HashMap<>();
     static {
         typeMap.put("TINYINT", "TINYINT");
@@ -28,7 +28,7 @@ public class TableColumnGenerator {
     protected final String db_password;
     protected final String db_jdbcUrl;
 
-    public TableColumnGenerator(String host, String port, String username, String password) {
+    public ColumnDDLBuilder(String host, String port, String username, String password) {
         this.db_host = host;
         this.db_port = port;
         this.db_password = password;
@@ -36,7 +36,7 @@ public class TableColumnGenerator {
         this.db_jdbcUrl = String.format("jdbc:mysql://%s:%s?useUnicode=true&characterEncoding=utf8", host, port);
     }
     
-    public String generateDefinition(String database, String table, DDLContext ctx) throws Exception {
+    public String getDDLString(String database, String table, DDLContext ctx) throws Exception {
         Class.forName("com.mysql.cj.jdbc.Driver");
         Connection con = DriverManager.getConnection(db_jdbcUrl, db_username, db_password);
         Statement stmt = con.createStatement();

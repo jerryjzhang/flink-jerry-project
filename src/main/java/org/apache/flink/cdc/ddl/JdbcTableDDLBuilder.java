@@ -1,14 +1,14 @@
-package org.apache.flink.util;
+package org.apache.flink.cdc.ddl;
 
 import org.apache.flink.configuration.Configuration;
 
-public class MysqlJdbcDDLBuilder implements DDLBuilder {
+public class JdbcTableDDLBuilder implements TableDDLBuilder {
     private final String db_host;
     private final String db_port;
     private final String db_username;
     private final String db_password;
 
-    public MysqlJdbcDDLBuilder(String host, String port, String username, String password) {
+    public JdbcTableDDLBuilder(String host, String port, String username, String password) {
         this.db_host = host;
         this.db_port = port;
         this.db_password = password;
@@ -26,7 +26,7 @@ public class MysqlJdbcDDLBuilder implements DDLBuilder {
         String jdbcUrl = String.format("jdbc:mysql://%s:%s/%s?useUnicode=true" +
                         "&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&serverTimezone=UTC",
                 db_host, db_port, database);
-        Integer sinkParallelism = options.get(DDLBuilder.OPTION_SINK_PARAMETER);
+        Integer sinkParallelism = options.get(TableDDLBuilder.OPTION_SINK_PARAMETER);
         return String.format(
                 "CREATE TABLE %s (\n" +
                         " %s) WITH (\n" +

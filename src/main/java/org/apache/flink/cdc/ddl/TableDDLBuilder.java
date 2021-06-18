@@ -1,10 +1,10 @@
-package org.apache.flink.util;
+package org.apache.flink.cdc.ddl;
 
 import org.apache.flink.configuration.ConfigOption;
 import org.apache.flink.configuration.ConfigOptions;
 import org.apache.flink.configuration.Configuration;
 
-public interface DDLBuilder {
+public interface TableDDLBuilder {
     ConfigOption<Integer> OPTION_SINK_PARAMETER =
             ConfigOptions.key("sink.parallelism").defaultValue(1);
 

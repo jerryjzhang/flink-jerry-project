@@ -1,12 +1,12 @@
-package org.apache.flink.util;
+package org.apache.flink.cdc.ddl;
 
 import org.apache.flink.configuration.Configuration;
 
-public class ElasticsearchDDLBuilder implements DDLBuilder {
+public class EsTableDDLBuilder implements TableDDLBuilder {
     private final String esHost;
     private final String esIndex;
 
-    public ElasticsearchDDLBuilder(String esHost, String esIndex) {
+    public EsTableDDLBuilder(String esHost, String esIndex) {
         this.esHost = esHost;
         this.esIndex = esIndex;
     }

@@ -1,17 +1,14 @@
 package org.apache.flink.cdc;
 
-import org.apache.flink.util.FlinkSyncJob;
+import org.apache.flink.cdc.job.Cdc2KafkaJob;
 
 public class MysqlCdcSyncKafka {
     public static void main(String [] args) throws Exception {
-        FlinkSyncJob syncJob = new FlinkSyncJob(new FlinkSyncJob.SyncContext()
-                .jdbcHost("localhost")
-                .jdbcPort("3306")
-                .jdbcUsername("jerryjzhang")
-                .jdbcPassword("tme")
-                .kafkaServers("localhost:9092"));
+        Cdc2KafkaJob job = new Cdc2KafkaJob("localhost", "3306",
+                "jerryjzhang", "tme",
+                "localhost:9092");
 
-        syncJob.cdc2kafka("jerry", "products", 1);
-        syncJob.run();
+        job.addSync("jerry", "products", 1);
+        job.run();
     }
 }

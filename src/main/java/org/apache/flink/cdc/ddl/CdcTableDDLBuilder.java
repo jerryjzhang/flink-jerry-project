@@ -1,14 +1,14 @@
-package org.apache.flink.util;
+package org.apache.flink.cdc.ddl;
 
 import org.apache.flink.configuration.Configuration;
 
-public class MysqlCdcDDLBuilder implements DDLBuilder {
+public class CdcTableDDLBuilder implements TableDDLBuilder {
     private final String db_host;
     private final String db_port;
     private final String db_username;
     private final String db_password;
 
-    public MysqlCdcDDLBuilder(String host, String port, String username, String password) {
+    public CdcTableDDLBuilder(String host, String port, String username, String password) {
         this.db_host = host;
         this.db_port = port;
         this.db_password = password;
