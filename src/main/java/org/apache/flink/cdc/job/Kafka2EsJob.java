@@ -7,7 +7,7 @@ import org.apache.flink.cdc.ddl.KafkaTableDDLBuilder;
 
 import java.util.List;
 
-public class Kafka2EsJob extends AbstractSyncJob {
+public class Kafka2EsJob extends AbstractJob {
     private final String kafkaServers;
     private final String kafkaGroupId;
     private final String esHost;

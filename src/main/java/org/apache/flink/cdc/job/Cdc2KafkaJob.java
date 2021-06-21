@@ -6,7 +6,7 @@ import org.apache.flink.cdc.ddl.ColumnDDLBuilder;
 import org.apache.flink.cdc.ddl.KafkaTableDDLBuilder;
 import org.apache.flink.cdc.ddl.TableDDLBuilder;
 
-public class Cdc2KafkaJob extends AbstractSyncJob {
+public class Cdc2KafkaJob extends AbstractJob {
     private final String cdc_db_host;
     private final String cdc_db_port;
     private final String cdc_db_username;

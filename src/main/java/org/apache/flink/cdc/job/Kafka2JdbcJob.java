@@ -3,7 +3,7 @@ package org.apache.flink.cdc.job;
 import org.apache.flink.cdc.ddl.*;
 import org.apache.flink.configuration.Configuration;
 
-public class Kafka2JdbcJob extends AbstractSyncJob {
+public class Kafka2JdbcJob extends AbstractJob {
     private final String jdbcHost;
     private final String jdbcPort;
     private final String jdbcUsername;
